@@ -1,0 +1,1105 @@
+/* ==========================================================================
+   CONSOLIUS - CSS DESIGN SYSTEM & VARIABLES
+   ========================================================================== */
+
+:root {
+    /* --- Console Defaults --- */
+    --console-bg: #050508;
+    --console-text: #e0e0f0;
+    --console-accent: #00ffcc;
+    --console-font: 'Fira Code', monospace;
+    --console-font-size: 14px;
+    --console-radius: 6px;
+    --console-blur: 8px;
+    --console-padding: 24px;
+    --console-border: 1px solid rgba(0, 255, 204, 0.15);
+
+    /* --- IDE Defaults --- */
+    --ide-bg: #0d0d12;
+    --ide-sidebar-bg: #07070a;
+    --ide-panel-bg: #12121a;
+    --ide-header-bg: #09090d;
+    --ide-text: #e0e0ea;
+    --ide-accent: #ff007f;
+    --ide-font: 'Inter', sans-serif;
+    --ide-font-size: 13px;
+    --ide-radius: 8px;
+    --ide-blur: 10px;
+    --ide-sidebar-width: 260px;
+    --ide-editor-size: 13px;
+    --ide-gap: 8px;
+    --ide-border-color: rgba(255, 255, 255, 0.06);
+
+    /* --- Global & Animations --- */
+    --transition-speed: 0.3s;
+    --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-premium: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Resets */
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    user-select: none;
+}
+
+body {
+    background: var(--console-bg);
+    color: var(--console-text);
+    font-family: var(--console-font);
+    font-size: var(--console-font-size);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: background var(--transition-speed) var(--transition-curve),
+                color var(--transition-speed) var(--transition-curve);
+}
+
+input, textarea, select, button {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/* === SCREENS === */
+.screen { 
+    display: flex; 
+    flex-direction: column; 
+    width: 100%; 
+    height: 100%; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+    transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+    /* Start hidden without display:none so transitions work */
+    visibility: hidden;
+}
+.screen.active { 
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 10;
+}
+/* When transitioning OUT, keep visible until fully faded */
+.screen.fading-out {
+    visibility: visible;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* ==========================================================================
+   1. CONSOLIUS BOOT & MAIN TERMINAL
+   ========================================================================== */
+
+#screen-terminal { 
+    background: var(--console-bg); 
+    padding: var(--console-padding); 
+    overflow-y: auto; 
+    z-index: 100;
+}
+
+.ascii-art { 
+    white-space: pre; 
+    font-size: clamp(6px, 1.2vw, 13px); 
+    margin-bottom: 24px; 
+    font-weight: bold; 
+    color: var(--console-accent);
+    text-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+    line-height: 1.15;
+}
+
+.term-output { 
+    margin-bottom: 8px; 
+    line-height: 1.5; 
+    word-wrap: break-word;
+    animation: fadeInLine 0.15s ease-out;
+}
+
+.term-line { 
+    display: flex; 
+    align-items: center; 
+    margin-top: 12px; 
+}
+
+.term-prompt { 
+    margin-right: 12px; 
+    white-space: nowrap; 
+    color: var(--console-accent);
+    font-weight: 600;
+}
+
+.term-input {
+    background: transparent; 
+    border: none; 
+    color: #ffffff; 
+    width: 100%; 
+    outline: none;
+    caret-color: var(--console-accent);
+}
+
+@keyframes fadeInLine {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes proxyLoadPulse {
+    0% { width: 0%; }
+    40% { width: 60%; }
+    70% { width: 80%; }
+    100% { width: 100%; }
+}
+
+/* ==========================================================================
+   2. PROXY BROWSER (MOCK BRAVE BROWSER)
+   ========================================================================== */
+
+#screen-proxy { 
+    background: #000000; 
+    z-index: 50; 
+    flex-direction: column;
+}
+
+/* Browser Nav Toolbar */
+.browser-navbar {
+    background: #18181f;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.browser-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.browser-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cccccc;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.browser-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+.browser-address-bar {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 6px 16px;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.browser-address-input {
+    background: transparent;
+    border: none;
+    color: inherit;
+    width: 100%;
+    outline: none;
+    font-size: 13px;
+}
+
+#proxy-frame { 
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; 
+    height: 100%;
+    border: none; 
+    background: #ffffff;
+}
+
+/* Floating overlay hint in browser */
+.proxy-hud-badge {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: rgba(10, 10, 15, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    padding: 8px 16px;
+    font-size: 11px;
+    color: #a0a0b0;
+    pointer-events: auto;
+    z-index: 150;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: bounceBadge 2s infinite ease-in-out;
+    cursor: pointer;
+}
+
+.proxy-hud-badge kbd {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    padding: 2px 5px;
+    color: #fff;
+    font-weight: bold;
+}
+
+@keyframes bounceBadge {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+/* ==========================================================================
+   3. OVERLAY SLIDING TERMINAL
+   ========================================================================== */
+
+#overlay-terminal {
+    position: fixed; 
+    bottom: -40%; 
+    left: 0; 
+    width: 100%; 
+    height: 30%; 
+    background: rgba(var(--console-bg), 0.85); 
+    backdrop-filter: blur(var(--console-blur));
+    border-top: 1px solid var(--console-accent); 
+    z-index: 200; 
+    display: flex; 
+    flex-direction: column; 
+    padding: 16px;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
+    transition: bottom 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+#overlay-terminal.active { 
+    bottom: 0; 
+}
+#overlay-output { 
+    flex: 1; 
+    overflow-y: auto; 
+    margin-bottom: 8px; 
+}
+
+/* ==========================================================================
+   4. ADVANCED WEB IDE
+   ========================================================================== */
+
+#screen-ide { 
+    flex-direction: row; 
+    z-index: 10; 
+    background: var(--ide-bg); 
+    font-family: var(--ide-font);
+    font-size: var(--ide-font-size);
+}
+
+#sidebar {
+    width: var(--ide-sidebar-width); 
+    background: var(--ide-sidebar-bg); 
+    display: flex; 
+    flex-direction: column;
+    border-right: 1px solid var(--ide-border-color);
+    transition: width var(--transition-speed) var(--transition-curve);
+    overflow: hidden;
+}
+
+.sidebar-header { 
+    padding: 16px; 
+    font-weight: bold; 
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666675;
+    background: var(--ide-header-bg); 
+    border-bottom: 1px solid var(--ide-border-color);
+}
+
+#tabs-container { 
+    flex: 1; 
+    overflow-y: auto; 
+    padding: 12px; 
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Tab Elements with Individual Volume Controls */
+.tab {
+    background: var(--ide-panel-bg); 
+    padding: 10px 12px; 
+    border-radius: var(--ide-radius);
+    cursor: pointer; 
+    display: flex; 
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid var(--ide-border-color);
+    transition: all 0.2s ease;
+}
+
+.tab:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.tab.active { 
+    background: var(--ide-accent); 
+    border-color: var(--ide-accent);
+    color: #000000; 
+    font-weight: bold; 
+    box-shadow: 0 4px 12px rgba(255, 0, 127, 0.25);
+}
+
+.tab-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.tab-title-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    outline: none;
+    font-size: 12px;
+    flex: 1;
+    min-width: 0;
+    margin-right: 8px;
+}
+
+.tab-controls-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tab-close { 
+    background: transparent; 
+    border: none; 
+    color: inherit; 
+    cursor: pointer; 
+    opacity: 0.6;
+    padding: 2px;
+}
+.tab-close:hover { opacity: 1; }
+
+/* Custom Tab Volume Sliders */
+.tab-volume-slider-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    opacity: 0.75;
+    transition: opacity 0.2s;
+    background: rgba(0,0,0,0.15);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+.tab-volume-slider-wrapper:hover {
+    opacity: 1;
+}
+.tab-volume-icon {
+    font-size: 10px;
+    width: 12px;
+    text-align: center;
+}
+.tab-volume-slider {
+    flex: 1;
+    height: 3px;
+    -webkit-appearance: none;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+.tab.active .tab-volume-slider {
+    background: rgba(0, 0, 0, 0.25);
+}
+.tab-volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ide-accent);
+}
+.tab.active .tab-volume-slider::-webkit-slider-thumb {
+    background: #000000;
+}
+
+.btn-ghost {
+    width: 100%; 
+    padding: 12px; 
+    background: transparent; 
+    border: 1px dashed var(--ide-border-color);
+    color: var(--ide-text); 
+    border-radius: var(--ide-radius); 
+    cursor: pointer; 
+    transition: all 0.2s ease;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.btn-ghost:hover { 
+    border-color: var(--ide-accent); 
+    color: var(--ide-accent); 
+    background: rgba(255, 255, 255, 0.02);
+}
+
+#workspace { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    gap: var(--ide-gap);
+    padding: var(--ide-gap);
+}
+
+#workspace header { 
+    background: var(--ide-header-bg); 
+    padding: 12px 16px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    border-radius: var(--ide-radius);
+    border: 1px solid var(--ide-border-color);
+}
+
+.toolbar { 
+    display: flex; 
+    gap: 10px; 
+}
+
+button.toolbar-btn {
+    background: var(--ide-panel-bg); 
+    color: var(--ide-text); 
+    border: 1px solid var(--ide-border-color);
+    padding: 8px 14px; 
+    border-radius: var(--ide-radius); 
+    cursor: pointer; 
+    font-size: 12px; 
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s var(--transition-curve);
+}
+button.toolbar-btn:hover { 
+    background: var(--ide-accent); 
+    border-color: var(--ide-accent);
+    color: #000000; 
+    box-shadow: 0 4px 12px rgba(var(--ide-accent), 0.2);
+}
+
+/* Grid Layouts support */
+#editor-grid { 
+    display: flex; 
+    flex: 1; 
+    overflow: hidden; 
+    gap: var(--ide-gap);
+}
+
+/* IDE Layout Configurations */
+#editor-grid.layout-standard {
+    flex-direction: row;
+}
+#editor-grid.layout-stacked {
+    flex-direction: column;
+}
+#editor-grid.layout-vsplit {
+    flex-direction: row;
+}
+#editor-grid.layout-3col {
+    flex-direction: row;
+}
+
+.panel { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    background: var(--ide-panel-bg); 
+    border-radius: var(--ide-radius);
+    border: 1px solid var(--ide-border-color);
+    overflow: hidden;
+}
+
+.panel-header { 
+    background: var(--ide-header-bg); 
+    padding: 8px 12px; 
+    font-size: 11px; 
+    font-weight: bold; 
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--ide-border-color); 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.CodeMirror { 
+    height: 100% !important; 
+    font-family: 'Fira Code', monospace; 
+    font-size: var(--ide-editor-size); 
+    background: transparent !important; 
+}
+
+.resizer { 
+    background: var(--ide-border-color); 
+    width: 6px; 
+    cursor: col-resize; 
+    z-index: 5; 
+    transition: background 0.2s;
+    border-radius: 3px;
+}
+.resizer:hover { 
+    background: var(--ide-accent); 
+}
+
+/* OUTPUT AREA - Holds multiple iframes */
+#output-area { 
+    flex: 1.2; 
+    display: flex; 
+    flex-direction: column; 
+    background: #ffffff; 
+    position: relative; 
+    border-radius: var(--ide-radius);
+    overflow: hidden;
+    border: 1px solid var(--ide-border-color);
+}
+.preview-iframe { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    border: none; 
+    background: #ffffff; 
+    display: none; 
+}
+.preview-iframe.active { 
+    display: block; 
+}
+
+/* ==========================================================================
+   5. SYSTEM PERFORMANCE HUD / DASHBOARD
+   ========================================================================== */
+
+#perf-hud {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    background: rgba(10, 10, 15, 0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-family: 'Fira Code', monospace;
+    color: #888899;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.perf-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.perf-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00ffcc;
+    box-shadow: 0 0 6px #00ffcc;
+}
+
+/* ==========================================================================
+   6. STYLE CENTER & SYSTEM MODALS (ADVANCED UI MAKER)
+   ========================================================================== */
+
+.overlay {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    display: none; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 999;
+    opacity: 0;
+    transition: opacity var(--transition-speed) var(--transition-curve);
+}
+.overlay.active { 
+    display: flex; 
+    opacity: 1;
+}
+
+.modal.glass-panel {
+    background: rgba(13, 13, 20, 0.85); 
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    padding: 24px; 
+    width: 600px;
+    max-height: 85vh;
+    border-radius: 12px;
+    box-shadow: var(--shadow-premium);
+    transform: scale(0.9);
+    transition: transform var(--transition-speed) var(--transition-curve);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.overlay.active .modal.glass-panel {
+    transform: scale(1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 12px;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    background: linear-gradient(90deg, #00ffcc, #ff007f);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Tab toggle buttons at the top of Style Center */
+.style-center-target-tabs {
+    display: flex;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.style-center-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #888899;
+    padding: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+    text-align: center;
+}
+
+.style-center-tab-btn.active {
+    background: rgba(255,255,255,0.08);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Color-coded hierarchy sections */
+.style-hierarchy-section {
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.style-hierarchy-header {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.style-hierarchy-header::after {
+    content: '\f107';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    transition: transform 0.2s;
+}
+
+.style-hierarchy-section.collapsed .style-hierarchy-header::after {
+    transform: rotate(-90deg);
+}
+
+.style-hierarchy-content {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: max-height 0.3s ease-out;
+    max-height: 500px;
+    overflow: hidden;
+}
+
+.style-hierarchy-section.collapsed .style-hierarchy-content {
+    max-height: 0;
+    padding: 0 14px;
+    border-bottom: none;
+}
+
+/* Hierarchy Color Codings */
+.style-hierarchy-section.cat-font { border-left: 3px solid #ff007f; }
+.style-hierarchy-section.cat-size { border-left: 3px solid #00ffcc; }
+.style-hierarchy-section.cat-corner { border-left: 3px solid #ffaa00; }
+.style-hierarchy-section.cat-colors { border-left: 3px solid #b800ff; }
+.style-hierarchy-section.cat-layout { border-left: 3px solid #00aaff; }
+
+.control-row { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    gap: 16px;
+}
+
+.control-row span {
+    font-size: 12px;
+    color: #a0a0b0;
+}
+
+.control-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-slider-val {
+    font-size: 11px;
+    font-family: 'Fira Code', monospace;
+    color: var(--console-accent);
+    width: 32px;
+    text-align: right;
+}
+
+input[type="checkbox"] { 
+    accent-color: #00ffcc; 
+    transform: scale(1.2); 
+    cursor: pointer;
+}
+
+input[type="color"] {
+    -webkit-appearance: none;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    background: transparent;
+}
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+input[type="color"]::-webkit-color-swatch {
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #00ffcc;
+    cursor: pointer;
+    border: 1px solid #000;
+}
+
+select, input[type="text"] {
+    background: rgba(0, 0, 0, 0.3); 
+    color: #ffffff; 
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px; 
+    padding: 6px 12px; 
+    outline: none;
+    transition: border-color 0.2s;
+}
+select:focus, input[type="text"]:focus {
+    border-color: #00ffcc;
+}
+
+/* Preset Themes Grid */
+.presets-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.preset-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e0e0e0;
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.preset-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #00ffcc;
+    transform: translateY(-1px);
+}
+
+/* Save / Load Configurations list */
+.saved-configs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 10px;
+    background: rgba(0,0,0,0.15);
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.config-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+.config-item-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.config-btn {
+    background: transparent;
+    border: none;
+    color: #a0a0b0;
+    cursor: pointer;
+    font-size: 10px;
+    transition: color 0.15s;
+}
+.config-btn:hover {
+    color: #fff;
+}
+.config-btn.delete:hover {
+    color: #ff3b30;
+}
+
+/* Save Preset Row */
+.save-preset-input-row {
+    display: flex;
+    gap: 8px;
+}
+.save-preset-input-row input {
+    flex: 1;
+}
+
+/* Custom Alert Banner */
+.sys-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50px);
+    background: rgba(10, 10, 15, 0.9);
+    border: 1px solid #00ffcc;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 12px;
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.sys-notification.active {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ==========================================================================
+   7. CUSTOM GLIDING SPOTLIGHT TOUR ENGINE
+   ========================================================================== */
+
+#tour-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 99999;
+    display: none;
+    pointer-events: auto;
+    transition: opacity 0.4s;
+    opacity: 0;
+}
+
+#tour-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* The transparent cutout box that glides smoothly */
+#tour-spotlight {
+    display: none;
+    position: absolute;
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75), 0 0 15px 2px var(--console-accent);
+    transition: top 0.45s cubic-bezier(0.25, 1, 0.5, 1),
+                left 0.45s cubic-bezier(0.25, 1, 0.5, 1),
+                width 0.45s cubic-bezier(0.25, 1, 0.5, 1),
+                height 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+    pointer-events: none;
+    z-index: 100000;
+}
+
+/* The tooltip popover box that points to the spotlight */
+#tour-tooltip {
+    position: absolute;
+    width: 280px;
+    background: rgba(15, 15, 22, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--console-accent);
+    border-radius: 8px;
+    padding: 16px;
+    color: #fff;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    z-index: 100001;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-family: var(--console-font);
+    font-size: 12px;
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    transform: translateY(10px);
+}
+
+#tour-tooltip.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tour-tooltip-title {
+    font-weight: bold;
+    font-size: 13px;
+    color: var(--console-accent);
+}
+
+.tour-tooltip-text {
+    line-height: 1.4;
+    color: #d0d0d8;
+}
+
+.tour-tooltip-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.tour-tooltip-step {
+    font-size: 10px;
+    color: #666675;
+}
+
+.tour-tooltip-btns {
+    display: flex;
+    gap: 6px;
+}
+
+.tour-tooltip-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+}
+.tour-tooltip-btn.primary {
+    background: var(--console-accent);
+    color: #000;
+    border: none;
+    font-weight: bold;
+}
+.tour-tooltip-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+.tour-tooltip-btn.primary:hover {
+    background: #ffffff;
+}

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONSOLIUS | Advanced Web OS</title>
+    
+    <!-- Design Stylesheets -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-darker.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;800&family=Comic+Neue&family=Outfit:wght@400;600;800&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Utilities -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+</head>
+<body>
+
+    <!-- System Performance HUD -->
+    <div id="perf-hud">
+        <div class="perf-item"><div class="perf-dot"></div><span>CPU: <span id="perf-cpu">0.0%</span></span></div>
+        <div class="perf-item"><span>MEM: <span id="perf-mem">0.0 MB</span></span></div>
+        <div class="perf-item"><span>FPS: <span id="perf-fps">60</span></span></div>
+    </div>
+
+    <!-- System Notifications -->
+    <div id="sys-notification" class="sys-notification">
+        <i class="fa-solid fa-bell" style="color: var(--console-accent)"></i>
+        <span id="sys-notification-text">System notification</span>
+    </div>
+
+    <!-- 1. MAIN TERMINAL & BOOT SCREEN -->
+    <div id="screen-terminal" class="screen active">
+        <div id="boot-log-container" style="display:none; font-family:var(--console-font); color:#888899; line-height:1.6; margin-bottom:20px;"></div>
+        <div id="terminal-main-content">
+            <div class="ascii-art">
+   ____ ___  _   _  ____  ___  _     ___ _   _ ____  
+  / ___/ _ \| \ | |/ ___|/ _ \| |   |_ _| | | / ___| 
+ | |  | | | |  \| |\___ \ | | | |    | || | | \___ \ 
+ | |__| |_| | |\  | ___) | |_| | |___ | || |_| |___) |
+  \____\___/|_| \_||____/ \___/|_____|___|\___/|____/ 
+            </div>
+            <div id="main-term-output">
+                <!-- Welcome outputs inserted via script -->
+            </div>
+            <div class="term-line" id="term-input-row">
+                <span class="term-prompt" id="term-prompt-lbl">root@consolius:~$</span>
+                <input type="text" id="main-term-input" class="term-input" autocomplete="off" spellcheck="false" autofocus>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. PROXY BROWSER -->
+    <div id="screen-proxy" class="screen">
+        <div class="browser-navbar">
+            <div class="browser-controls">
+                <button class="browser-btn" onclick="proxyBack()" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
+                <button class="browser-btn" onclick="proxyForward()" title="Forward"><i class="fa-solid fa-arrow-right"></i></button>
+                <button class="browser-btn" onclick="proxyReload()" title="Reload" id="proxy-reload-btn"><i class="fa-solid fa-rotate-right"></i></button>
+                <button class="browser-btn" onclick="executeCommand('exit')" title="Exit to Terminal"><i class="fa-solid fa-house"></i></button>
+            </div>
+            <div class="browser-address-bar">
+                <i class="fa-solid fa-shield-halved" id="proxy-secure-icon" style="color: var(--console-accent); font-size: 12px;"></i>
+                <input type="text" id="proxy-address" class="browser-address-input" autocomplete="off" spellcheck="false" placeholder="Search or enter URL...">
+            </div>
+            <div class="toolbar">
+                <button class="toolbar-btn" onclick="proxyNavigate()" style="background:var(--console-accent); color:#000; font-weight:bold; border:none;"><i class="fa-solid fa-arrow-right"></i> Go</button>
+                <button class="toolbar-btn" onclick="openAboutBlank()"><i class="fa-solid fa-window-restore"></i> Blank</button>
+            </div>
+        </div>
+        
+        <!-- Loading Indicator Bar -->
+        <div id="proxy-loading-bar" style="display:none; height:3px; background:linear-gradient(90deg, var(--console-accent), #ff007f); width:0%; transition:width 0.4s; position:relative; z-index:5;"></div>
+
+        <!-- Proxy status strip -->
+        <div id="proxy-status-strip" style="background:rgba(0,0,0,0.3); border-bottom:1px solid rgba(255,255,255,0.05); padding:4px 16px; font-size:10px; color:#666675; display:flex; align-items:center; gap:8px; font-family:'Fira Code', monospace;">
+            <i class="fa-solid fa-circle" id="proxy-status-dot" style="color:#00ff88; font-size:7px;"></i>
+            <span id="proxy-status-text">Consolius Proxy Engine Ready</span>
+            <span style="margin-left:auto;" id="proxy-engine-label">UV / XOR</span>
+        </div>
+
+        <!-- Browser content area -->
+        <div style="flex:1; position:relative; overflow:hidden;">
+            <!-- Loading splash screen -->
+            <div id="proxy-loading-splash" style="
+                position:absolute; top:0; left:0; width:100%; height:100%; 
+                background:var(--console-bg); display:flex; flex-direction:column;
+                align-items:center; justify-content:center; gap:16px; z-index:10;
+                font-family:'Fira Code', monospace;">
+                <div style="font-size:32px; color:var(--console-accent); animation:spin 1s linear infinite; display:inline-block;">
+                    <i class="fa-solid fa-circle-notch"></i>
+                </div>
+                <div style="font-size:14px; color:#aaa;" id="proxy-splash-text">Loading proxy engine...</div>
+                <div style="font-size:11px; color:#555;" id="proxy-splash-url"></div>
+            </div>
+
+            <!-- Error page shown when proxy fails -->
+            <div id="proxy-error-page" style="
+                position:absolute; top:0; left:0; width:100%; height:100%;
+                background:var(--console-bg); display:none; flex-direction:column;
+                align-items:center; justify-content:center; gap:20px; z-index:10;
+                font-family:'Fira Code', monospace; text-align:center; padding:40px;">
+                <div style="font-size:48px; color:#ff3b30;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div style="font-size:20px; color:#e0e0e0; font-weight:bold;">Connection Blocked</div>
+                <div style="font-size:12px; color:#666675; max-width:480px; line-height:1.7;" id="proxy-error-msg">
+                    The site refused to load in the proxy frame. This is usually caused by strict security headers.<br><br>
+                    Try entering a different proxy prefix in <strong style="color:var(--console-accent)">Settings → Web Proxy Gateway Prefix</strong>, or use a public Ultraviolet proxy like <strong style="color:var(--console-accent)">https://ultraviolet.party/</strong>
+                </div>
+                <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+                    <button class="toolbar-btn" onclick="proxyReload()"><i class="fa-solid fa-rotate-right"></i> Retry</button>
+                    <button class="toolbar-btn" onclick="openControlPanel('settings')"><i class="fa-solid fa-gear"></i> Change Proxy</button>
+                    <button class="toolbar-btn" onclick="executeCommand('exit')"><i class="fa-solid fa-house"></i> Go Home</button>
+                </div>
+            </div>
+
+            <!-- Actual browser iframe -->
+            <iframe id="proxy-frame" 
+                style="width:100%; height:100%; border:none; background:#fff; display:none;"
+                sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation"
+                referrerpolicy="no-referrer"
+                onload="proxyFrameLoaded()"
+                onerror="proxyFrameError()">
+            </iframe>
+        </div>
+
+        <div class="proxy-hud-badge" onclick="toggleOverlayTerminal()">
+            <i class="fa-solid fa-terminal"></i>
+            <span>Press <kbd>`</kbd> or <kbd>+</kbd> to open Command window</span>
+        </div>
+    </div>
+
+    <!-- 3. SLIDING OVERLAY TERMINAL -->
+    <div id="overlay-terminal">
+        <div id="overlay-output"></div>
+        <div class="term-line">
+            <span class="term-prompt">root@consolius:~$</span>
+            <input type="text" id="overlay-term-input" class="term-input" autocomplete="off" spellcheck="false">
+        </div>
+    </div>
+
+    <!-- 4. WEB IDE -->
+    <div id="screen-ide" class="screen">
+        <!-- Sidebar containing file tabs -->
+        <div id="sidebar">
+            <div class="sidebar-header"><i class="fa-solid fa-folder-tree"></i> Project Workspace</div>
+            <div id="tabs-container">
+                <button class="btn-ghost" onclick="createNewTab()"><i class="fa-solid fa-plus"></i> New File</button>
+                <div id="tab-list">
+                    <!-- Tab list dynamically items inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Working code workspace -->
+        <div id="workspace">
+            <header>
+                <div class="toolbar">
+                    <button class="toolbar-btn" onclick="executeCommand('exit')"><i class="fa-solid fa-terminal"></i> Exit IDE</button>
+                    <button class="toolbar-btn" style="background:var(--ide-accent); color:#000; font-weight:bold; border:none;" onclick="runCurrentTab()"><i class="fa-solid fa-play"></i> Run Game</button>
+                    <button class="toolbar-btn" style="background:rgba(255,255,255,0.08); border-color:var(--ide-accent);" onclick="openTabAboutBlank()"><i class="fa-solid fa-window-restore"></i> Open Blank</button>
+                </div>
+                <div class="toolbar">
+                    <button class="toolbar-btn" onclick="toggleFullscreen()"><i class="fa-solid fa-expand"></i> Fullscreen</button>
+                    <button class="toolbar-btn" onclick="exportToZip()"><i class="fa-solid fa-file-zipper"></i> Export ZIP</button>
+                    <button class="toolbar-btn" onclick="openControlPanel('style')"><i class="fa-solid fa-palette"></i> Style Center</button>
+                    <button class="toolbar-btn" onclick="openControlPanel('settings')"><i class="fa-solid fa-gears"></i> Settings</button>
+                </div>
+            </header>
+
+            <div id="editor-grid" class="layout-standard">
+                <div class="panel" id="panel-html">
+                    <div class="panel-header" style="color:#e34f26"><span><i class="fa-brands fa-html5"></i> HTML</span></div>
+                    <textarea id="htmlCode"></textarea>
+                </div>
+                <div class="resizer" id="resizer-1"></div>
+                <div class="panel" id="panel-css">
+                    <div class="panel-header" style="color:#264de4"><span><i class="fa-brands fa-css3-alt"></i> CSS</span></div>
+                    <textarea id="cssCode"></textarea>
+                </div>
+                <div class="resizer" id="resizer-2"></div>
+                <div class="panel" id="panel-js">
+                    <div class="panel-header" style="color:#f7df1e"><span><i class="fa-brands fa-square-js"></i> JavaScript</span></div>
+                    <textarea id="jsCode"></textarea>
+                </div>
+                <div class="resizer" id="resizer-3"></div>
+                <div id="output-area">
+                    <!-- Output dynamic viewports will render here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. CONSOLIUS SYSTEM CONTROL HUB & ADVANCED UI BUILDER -->
+    <div class="overlay" id="control-panel-modal">
+        <div class="modal glass-panel" style="width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="control-hub-title"><i class="fa-solid fa-sliders"></i> Consolius Style Center</h3>
+                <button class="browser-btn" style="border-radius:6px; width:28px; height:28px;" onclick="closeControlPanel()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <!-- Category Tabs inside Control Hub -->
+            <div class="style-center-target-tabs">
+                <button class="style-center-tab-btn active" id="tab-btn-style" onclick="setControlHubTab('style')"><i class="fa-solid fa-wand-magic-sparkles"></i> Customize UI</button>
+                <button class="style-center-tab-btn" id="tab-btn-presets" onclick="setControlHubTab('presets')"><i class="fa-solid fa-tags"></i> Preset Themes</button>
+                <button class="style-center-tab-btn" id="tab-btn-saveload" onclick="setControlHubTab('saveload')"><i class="fa-solid fa-floppy-disk"></i> Save / Load</button>
+                <button class="style-center-tab-btn" id="tab-btn-settings" onclick="setControlHubTab('settings')"><i class="fa-solid fa-circle-info"></i> System</button>
+            </div>
+
+            <div class="modal-body" id="control-hub-body">
+                
+                <!-- TAB 1: CUSTOM UI BUILDER -->
+                <div id="hub-section-style" class="hub-section active-section">
+                    <!-- UI Target buttons: Console or IDE -->
+                    <div style="display:flex; gap:10px; margin-bottom:15px; background:rgba(0,0,0,0.2); padding:6px; border-radius:8px;">
+                        <span style="font-size:11px; color:#888899; display:flex; align-items:center; margin-left:8px;">Target UI Component:</span>
+                        <button class="toolbar-btn" id="target-ui-console-btn" onclick="selectUiTarget('console')" style="flex:1; justify-content:center;"><i class="fa-solid fa-terminal"></i> Console UI</button>
+                        <button class="toolbar-btn active" id="target-ui-ide-btn" onclick="selectUiTarget('ide')" style="flex:1; justify-content:center;"><i class="fa-solid fa-code"></i> IDE UI</button>
+                    </div>
+
+                    <!-- Hierarchy foldout list -->
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        
+                        <!-- Hierarchy: Font settings -->
+                        <div class="style-hierarchy-section cat-font" id="foldout-font">
+                            <div class="style-hierarchy-header" onclick="toggleFoldout('font')"><i class="fa-solid fa-font"></i> Typography Settings</div>
+                            <div class="style-hierarchy-content">
+                                <div class="control-row">
+                                    <span>Font Family</span>
+                                    <select id="builder-font-family" onchange="applyBuilderChange('font-family')">
+                                        <option value="'Fira Code', monospace">Fira Code (Monospace)</option>
+                                        <option value="'Inter', sans-serif">Inter (Modern Clean)</option>
+                                        <option value="'Outfit', sans-serif">Outfit (Premium Bold)</option>
+                                        <option value="'Roboto', sans-serif">Roboto (Structured)</option>
+                                        <option value="'Comic Neue', cursive">Comic Neue (Playful)</option>
+                                    </select>
+                                </div>
+                                <div class="control-row">
+                                    <span>Font Weight</span>
+                                    <select id="builder-font-weight" onchange="applyBuilderChange('font-weight')">
+                                        <option value="400">Regular</option>
+                                        <option value="600">Semi Bold</option>
+                                        <option value="800">Extra Bold</option>
+                                    </select>
+                                </div>
+                                <div class="control-row">
+                                    <span>Main UI Font Size</span>
+                                    <div class="control-input-wrapper">
+                                        <input type="range" id="builder-font-size" min="11" max="22" value="13" oninput="applyBuilderChange('font-size')">
+                                        <span class="control-slider-val" id="val-font-size">13px</span>
+                                    </div>
+                                </div>
+                                <div class="control-row" id="row-editor-font-size">
+                                    <span>Code Editor Font Size</span>
+                                    <div class="control-input-wrapper">
+                                        <input type="range" id="builder-editor-font-size" min="10" max="24" value="13" oninput="applyBuilderChange('editor-font-size')">
+                                        <span class="control-slider-val" id="val-editor-font-size">13px</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hierarchy: Sizing & Gaps settings -->
+                        <div class="style-hierarchy-section cat-size" id="foldout-size">
+                            <div class="style-hierarchy-header" onclick="toggleFoldout('size')"><i class="fa-solid fa-maximize"></i> Layout Sizes & Spacing</div>
+                            <div class="style-hierarchy-content">
+                                <div class="control-row" id="row-sidebar-width">
+                                    <span>Sidebar Width</span>
+                                    <div class="control-input-wrapper">
+                                        <input type="range" id="builder-sidebar-width" min="180" max="400" value="260" oninput="applyBuilderChange('sidebar-width')">
+                                        <span class="control-slider-val" id="val-sidebar-width">260px</span>
+                                    </div>
+                                </div>
+                                <div class="control-row" id="row-grid-gap">
+                                    <span>Grid Spacing Gap</span>
+                                    <div class="control-input-wrapper">
+                                        <input type="range" id="builder-grid-gap" min="0" max="20" value="8" oninput="applyBuilderChange('grid-gap')">
+                                        <span class="control-slider-val" id="val-grid-gap">8px</span>
+                                    </div>
+                                </div>
+                                <div class="control-row">
+                                    <span>Padding Size</span>
+                                    <div class="control-input-wrapper">
+                                        <input type="range" id="builder-padding" min="4" max="32" value="12" oninput="applyBuilderChange('padding')">
+                                        <span class="control-slider-val" id="val-padding">12px</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hierarchy: Corner Settings -->
+                        <div class="style-hierarchy-section cat-corner" id="foldout-corner">
+                            <div class="style-hierarchy-header" onclick="toggleFoldout('corner')"><i class="fa-solid fa-shapes"></i> Corner Border Radii</div>
+                            <div class="style-hierarchy-content">
+                                <div class="control-row">
+                                    <span>Border Radius</span>
+                                    <div class="control-input-wrapper">
+                                        <input type="range" id="builder-border-radius" min="0" max="24" value="8" oninput="applyBuilderChange('border-radius')">
+                                        <span class="control-slider-val" id="val-border-radius">8px</span>
+                                    </div>
+                                </div>
+                                <div class="control-row">
+                                    <span>Border Width</span>
+                                    <div class="control-input-wrapper">
+                                        <input type="range" id="builder-border-width" min="0" max="4" value="1" oninput="applyBuilderChange('border-width')">
+                                        <span class="control-slider-val" id="val-border-width">1px</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hierarchy: Colors & Effects -->
+                        <div class="style-hierarchy-section cat-colors" id="foldout-colors">
+                            <div class="style-hierarchy-header" onclick="toggleFoldout('colors')"><i class="fa-solid fa-palette"></i> Colors & Glassmorphism</div>
+                            <div class="style-hierarchy-content">
+                                <div class="control-row">
+                                    <span>Background Color</span>
+                                    <input type="color" id="builder-color-bg" onchange="applyBuilderChange('color-bg')">
+                                </div>
+                                <div class="control-row" id="row-color-panel">
+                                    <span>Panel Background</span>
+                                    <input type="color" id="builder-color-panel" onchange="applyBuilderChange('color-panel')">
+                                </div>
+                                <div class="control-row" id="row-color-header">
+                                    <span>Header Background</span>
+                                    <input type="color" id="builder-color-header" onchange="applyBuilderChange('color-header')">
+                                </div>
+                                <div class="control-row">
+                                    <span>Accent color</span>
+                                    <input type="color" id="builder-color-accent" onchange="applyBuilderChange('color-accent')">
+                                </div>
+                                <div class="control-row">
+                                    <span>Text color</span>
+                                    <input type="color" id="builder-color-text" onchange="applyBuilderChange('color-text')">
+                                </div>
+                                <div class="control-row">
+                                    <span>Glass Blur Effect</span>
+                                    <div class="control-input-wrapper">
+                                        <input type="range" id="builder-glass-blur" min="0" max="25" value="10" oninput="applyBuilderChange('glass-blur')">
+                                        <span class="control-slider-val" id="val-glass-blur">10px</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hierarchy: Layout Arrangement -->
+                        <div class="style-hierarchy-section cat-layout" id="foldout-layout">
+                            <div class="style-hierarchy-header" onclick="toggleFoldout('layout')"><i class="fa-solid fa-layer-group"></i> Layout Grid Settings</div>
+                            <div class="style-hierarchy-content">
+                                <div class="control-row" id="row-ide-layout">
+                                    <span>IDE Layout Template</span>
+                                    <select id="builder-layout-template" onchange="applyBuilderChange('layout-template')">
+                                        <option value="layout-standard">Classic Grid (Editors Left, Output Right)</option>
+                                        <option value="layout-vsplit">Workspace Columns (Editors Left / Middle / Right, Output Full Right)</option>
+                                        <option value="layout-stacked">Horizontal Row (Editors Top, Output Bottom)</option>
+                                        <option value="layout-3col">3-Column Grid (Sidebar, Code column, Output column)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- TAB 2: PRESET THEMES LIST -->
+                <div id="hub-section-presets" class="hub-section" style="display:none;">
+                    <div style="font-size:12px; color:#888899; margin-bottom:15px;">Instantly rewrite styles for Console & IDE using professional templates:</div>
+                    <div class="presets-grid">
+                        <button class="preset-btn" onclick="applyPresetTheme('cyberpunk')"><i class="fa-solid fa-bolt" style="color:#00ffcc;"></i> Cyberpunk</button>
+                        <button class="preset-btn" onclick="applyPresetTheme('dracula')"><i class="fa-solid fa-ghost" style="color:#bd93f9;"></i> Dracula</button>
+                        <button class="preset-btn" onclick="applyPresetTheme('nord')"><i class="fa-solid fa-snowflake" style="color:#88c0d0;"></i> Nord Frosted</button>
+                        <button class="preset-btn" onclick="applyPresetTheme('aurora')"><i class="fa-solid fa-eye" style="color:#a3be8c;"></i> Glassy Aurora</button>
+                        <button class="preset-btn" onclick="applyPresetTheme('matrix')"><i class="fa-solid fa-code-branch" style="color:#00ff00;"></i> The Matrix</button>
+                        <button class="preset-btn" onclick="applyPresetTheme('synthwave')"><i class="fa-solid fa-radio" style="color:#ff79c6;"></i> Synthwave</button>
+                        <button class="preset-btn" onclick="applyPresetTheme('monokai')"><i class="fa-solid fa-palette" style="color:#f92672;"></i> Monokai Pro</button>
+                        <button class="preset-btn" onclick="applyPresetTheme('sakura')"><i class="fa-solid fa-leaf" style="color:#ffb6c1;"></i> Sakura Pink</button>
+                    </div>
+                </div>
+
+                <!-- TAB 3: SAVE / LOAD CONFIGS -->
+                <div id="hub-section-saveload" class="hub-section" style="display:none;">
+                    <div style="font-size:12px; color:#888899; margin-bottom:10px;">Save your current style configuration to the system library:</div>
+                    
+                    <div class="save-preset-input-row" style="margin-bottom:16px;">
+                        <input type="text" id="preset-save-name" placeholder="My Epic Preset Name" autocomplete="off">
+                        <button class="toolbar-btn" style="background:var(--console-accent); color:#000; font-weight:bold;" onclick="saveCurrentConfig()"><i class="fa-solid fa-download"></i> Save Style</button>
+                    </div>
+                    
+                    <div style="font-size:11px; text-transform:uppercase; color:#666675; font-weight:bold; margin-bottom:6px;">Saved Layout Profiles</div>
+                    <div class="saved-configs-list" id="saved-configs-box" style="margin-bottom:16px;">
+                        <!-- Dynamic configs list inserted here -->
+                    </div>
+                    <button class="toolbar-btn" style="width:100%; justify-content:center; background:#cc0000; color:#fff; border:none;" onclick="resetAllStyles()"><i class="fa-solid fa-rotate-left"></i> Restore Default OS Styles</button>
+                </div>
+
+                <!-- TAB 4: SYSTEM SETTINGS -->
+                <div id="hub-section-settings" class="hub-section" style="display:none;">
+                    <div class="control-row">
+                        <span>Disable Popups (suppress alerts in IDE running tasks)</span>
+                        <input type="checkbox" id="setting-popups" onchange="togglePopups()">
+                    </div>
+                    <div class="control-row">
+                        <span>Enable Adblocker (Brave proxy engine filtering)</span>
+                        <input type="checkbox" id="setting-adblock" onchange="toggleAdblock()">
+                    </div>
+                    <div class="control-row">
+                        <span>Autosave Code changes (500ms delay)</span>
+                        <input type="checkbox" id="setting-autosave" onchange="toggleAutosave()">
+                    </div>
+                    <div class="control-row">
+                        <span>Web Proxy Gateway Prefix</span>
+                        <input type="text" id="setting-proxy-prefix" style="width: 240px; font-size:11px;" placeholder="https://splash.best/service/" onchange="saveSettings()">
+                    </div>
+                    <div class="control-row">
+                        <span>Panic Shortcut Key (Ctrl + key)</span>
+                        <input type="text" id="setting-panic" maxlength="1" style="width: 50px; text-align: center;" placeholder="Q" onchange="saveSettings()">
+                    </div>
+                </div>
+
+            </div>
+            
+            <button class="btn-ghost" style="margin-top:10px;" onclick="closeControlPanel()">Close & Apply Hub Changes</button>
+        </div>
+    </div>
+
+    <!-- 6. GLIDING SPOTLIGHT TOUR CONTAINER -->
+    <div id="tour-overlay"></div>
+    <div id="tour-spotlight"></div>
+    <div id="tour-tooltip">
+        <div class="tour-tooltip-title" id="tour-title">Title</div>
+        <div class="tour-tooltip-text" id="tour-text">Description</div>
+        <div class="tour-tooltip-footer">
+            <div class="tour-tooltip-step" id="tour-step">1 / 5</div>
+            <div class="tour-tooltip-btns">
+                <button class="tour-tooltip-btn" id="tour-btn-skip" onclick="tourSkip()">Skip</button>
+                <button class="tour-tooltip-btn primary" id="tour-btn-next" onclick="tourNext()">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
