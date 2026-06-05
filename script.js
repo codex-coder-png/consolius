@@ -29,7 +29,16 @@ let customStyles = {
         colorBg: "#050508",
         colorAccent: "#00ffcc",
         colorText: "#e0e0f0",
-        glassBlur: "8"
+        glassBlur: "8",
+        lineHeight: "1.4",
+        letterSpacing: "0.0",
+        marginSize: "0",
+        accentGlow: "0",
+        borderStyle: "solid",
+        scaleModal: false,
+        hideHTML: false,
+        hideCSS: false,
+        hideJS: false
     },
     ide: {
         fontFamily: "'Inter', sans-serif",
@@ -47,7 +56,16 @@ let customStyles = {
         colorAccent: "#ff007f",
         colorText: "#e0e0ea",
         glassBlur: "10",
-        layoutTemplate: "layout-standard"
+        layoutTemplate: "layout-standard",
+        lineHeight: "1.4",
+        letterSpacing: "0.0",
+        marginSize: "0",
+        accentGlow: "0",
+        borderStyle: "solid",
+        scaleModal: false,
+        hideHTML: false,
+        hideCSS: false,
+        hideJS: false
     }
 };
 
@@ -357,6 +375,14 @@ function compileStylesToCSS() {
         document.head.appendChild(styleEl);
     }
 
+    // Generate shadow glow value from accentGlow variable
+    const ideGlow = parseInt(customStyles.ide.accentGlow) > 0 
+        ? `0 0 ${customStyles.ide.accentGlow}px ${customStyles.ide.colorAccent}33` 
+        : 'none';
+    const consoleGlow = parseInt(customStyles.console.accentGlow) > 0 
+        ? `0 0 ${customStyles.console.accentGlow}px ${customStyles.console.colorAccent}33` 
+        : 'none';
+
     let css = `
     :root {
         /* Console Custom Variables */
@@ -369,7 +395,11 @@ function compileStylesToCSS() {
         --console-radius: ${customStyles.console.borderRadius}px;
         --console-blur: ${customStyles.console.glassBlur}px;
         --console-padding: ${customStyles.console.padding}px;
-        --console-border: ${customStyles.console.borderWidth}px solid ${customStyles.console.colorAccent}33;
+        --console-border: ${customStyles.console.borderWidth}px ${customStyles.console.borderStyle || 'solid'} ${customStyles.console.colorAccent}33;
+        --console-line-height: ${customStyles.console.lineHeight || '1.4'};
+        --console-letter-spacing: ${customStyles.console.letterSpacing || '0'}px;
+        --console-margin: ${customStyles.console.marginSize || '0'}px;
+        --console-glow: ${consoleGlow};
 
         /* IDE Custom Variables */
         --ide-bg: ${customStyles.ide.colorBg};
@@ -387,6 +417,12 @@ function compileStylesToCSS() {
         --ide-editor-size: ${customStyles.ide.editorFontSize}px;
         --ide-gap: ${customStyles.ide.gridGap}px;
         --ide-border-color: rgba(255, 255, 255, 0.08);
+        --ide-border-style: ${customStyles.ide.borderStyle || 'solid'};
+        --ide-line-height: ${customStyles.ide.lineHeight || '1.4'};
+        --ide-letter-spacing: ${customStyles.ide.letterSpacing || '0'}px;
+        --ide-margin: ${customStyles.ide.marginSize || '0'}px;
+        --ide-panel-glow: ${ideGlow};
+        --ide-border-width: ${customStyles.ide.borderWidth}px;
     }
     
     #sidebar {
@@ -397,14 +433,43 @@ function compileStylesToCSS() {
         padding: var(--console-padding) !important;
         font-family: var(--console-font) !important;
         font-size: var(--console-font-size) !important;
+        line-height: var(--console-line-height) !important;
+        letter-spacing: var(--console-letter-spacing) !important;
+        box-shadow: var(--console-glow) !important;
+        border: var(--console-border) !important;
     }
     
     #screen-ide {
         font-family: var(--ide-font) !important;
         font-size: var(--ide-font-size) !important;
+        line-height: var(--ide-line-height) !important;
+        letter-spacing: var(--ide-letter-spacing) !important;
     }
+
+    #workspace {
+        padding: var(--ide-margin) !important;
+        gap: var(--ide-gap) !important;
+    }
+
+    .panel {
+        border: var(--ide-border-width) var(--ide-border-style) var(--ide-border-color) !important;
+        border-radius: var(--ide-radius) !important;
+        box-shadow: var(--ide-panel-glow) !important;
+        background: var(--ide-panel-bg) !important;
+    }
+
+    /* Individual Pane Hiding rules */
+    #panel-html { display: ${customStyles.ide.hideHTML ? 'none !important' : 'flex'} }
+    #panel-css  { display: ${customStyles.ide.hideCSS ? 'none !important' : 'flex'} }
+    #panel-js   { display: ${customStyles.ide.hideJS ? 'none !important' : 'flex'} }
     `;
     styleEl.innerHTML = css;
+
+    // Handle modal scaling classes on Control Hub modal element
+    const modalEl = document.querySelector('#control-panel-modal .modal');
+    if (modalEl) {
+        modalEl.classList.toggle('scaled', !!customStyles.ide.scaleModal);
+    }
 
     // Apply layout configuration
     const grid = document.getElementById('editor-grid');
@@ -443,6 +508,26 @@ function syncControlsWithTargetData() {
     
     document.getElementById('builder-padding').value = data.padding;
     document.getElementById('val-padding').innerText = `${data.padding}px`;
+
+    // Extended inputs
+    document.getElementById('builder-line-height').value = data.lineHeight || "1.4";
+    document.getElementById('val-line-height').innerText = data.lineHeight || "1.4";
+
+    document.getElementById('builder-letter-spacing').value = data.letterSpacing || "0.0";
+    document.getElementById('val-letter-spacing').innerText = `${data.letterSpacing || "0.0"}px`;
+
+    document.getElementById('builder-margin-size').value = data.marginSize || "0";
+    document.getElementById('val-margin-size').innerText = `${data.marginSize || "0"}px`;
+
+    document.getElementById('builder-accent-glow').value = data.accentGlow || "0";
+    document.getElementById('val-accent-glow').innerText = `${data.accentGlow || "0"}px`;
+
+    document.getElementById('builder-border-style').value = data.borderStyle || "solid";
+    document.getElementById('builder-scale-modal').checked = !!data.scaleModal;
+
+    document.getElementById('builder-hide-html').checked = !!data.hideHTML;
+    document.getElementById('builder-hide-css').checked = !!data.hideCSS;
+    document.getElementById('builder-hide-js').checked = !!data.hideJS;
     
     // Colors
     document.getElementById('builder-color-bg').value = convertToHex(data.colorBg);
@@ -460,6 +545,9 @@ function syncControlsWithTargetData() {
         document.getElementById('row-color-panel').style.display = 'none';
         document.getElementById('row-color-header').style.display = 'none';
         document.getElementById('row-ide-layout').style.display = 'none';
+        document.getElementById('row-hide-html').style.display = 'none';
+        document.getElementById('row-hide-css').style.display = 'none';
+        document.getElementById('row-hide-js').style.display = 'none';
     } else {
         document.getElementById('row-editor-font-size').style.display = 'flex';
         document.getElementById('row-sidebar-width').style.display = 'flex';
@@ -467,6 +555,9 @@ function syncControlsWithTargetData() {
         document.getElementById('row-color-panel').style.display = 'flex';
         document.getElementById('row-color-header').style.display = 'flex';
         document.getElementById('row-ide-layout').style.display = 'flex';
+        document.getElementById('row-hide-html').style.display = 'flex';
+        document.getElementById('row-hide-css').style.display = 'flex';
+        document.getElementById('row-hide-js').style.display = 'flex';
         
         document.getElementById('builder-editor-font-size').value = data.editorFontSize;
         document.getElementById('val-editor-font-size').innerText = `${data.editorFontSize}px`;
@@ -551,6 +642,43 @@ function applyBuilderChange(prop) {
         case 'layout-template':
             data.layoutTemplate = document.getElementById('builder-layout-template').value;
             clearPanelFlexStyles();
+            break;
+        
+        // Expanded dynamic options
+        case 'line-height':
+            const lh = document.getElementById('builder-line-height').value;
+            data.lineHeight = lh;
+            document.getElementById('val-line-height').innerText = lh;
+            break;
+        case 'letter-spacing':
+            const ls = document.getElementById('builder-letter-spacing').value;
+            data.letterSpacing = ls;
+            document.getElementById('val-letter-spacing').innerText = `${ls}px`;
+            break;
+        case 'margin-size':
+            const ms = document.getElementById('builder-margin-size').value;
+            data.marginSize = ms;
+            document.getElementById('val-margin-size').innerText = `${ms}px`;
+            break;
+        case 'accent-glow':
+            const ag = document.getElementById('builder-accent-glow').value;
+            data.accentGlow = ag;
+            document.getElementById('val-accent-glow').innerText = `${ag}px`;
+            break;
+        case 'border-style':
+            data.borderStyle = document.getElementById('builder-border-style').value;
+            break;
+        case 'scale-modal':
+            data.scaleModal = document.getElementById('builder-scale-modal').checked;
+            break;
+        case 'hide-html':
+            data.hideHTML = document.getElementById('builder-hide-html').checked;
+            break;
+        case 'hide-css':
+            data.hideCSS = document.getElementById('builder-hide-css').checked;
+            break;
+        case 'hide-js':
+            data.hideJS = document.getElementById('builder-hide-js').checked;
             break;
     }
 
@@ -728,36 +856,47 @@ function closeControlPanel() {
 }
 
 /**
- * Cleanly switch between screens with proper fade transition.
- * Prevents the "fade stays stuck" bug by using transitionend to hide.
+ * Cleanly switch between screens with spaceship loading transition.
+ * Shows the canvas loading animation between screen switches.
  */
-function switchScreen(targetId) {
-    const screens = document.querySelectorAll('.screen');
-    screens.forEach(s => {
-        if (s.classList.contains('active')) {
-            s.classList.remove('active');
-            s.classList.add('fading-out');
-            // After transition, fully hide
-            const cleanup = () => {
-                s.classList.remove('fading-out');
-                s.removeEventListener('transitionend', cleanup);
-            };
-            s.addEventListener('transitionend', cleanup);
-            // Safety fallback in case transitionend doesn't fire
-            setTimeout(cleanup, 400);
-        } else {
-            // Ensure any leftover fading-out class is removed
-            s.classList.remove('fading-out');
+let _hasVisitedIDE = false;
+function switchScreen(targetId, skipAnimation) {
+    if (skipAnimation) {
+        // Instant switch (used during initial boot)
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(s => {
+            s.classList.remove('active', 'fading-out');
+        });
+        const target = document.getElementById(targetId);
+        if (target) target.classList.add('active');
+        // Auto-start tour on first IDE visit
+        if (targetId === 'screen-ide' && !_hasVisitedIDE) {
+            _hasVisitedIDE = true;
+            if (!localStorage.getItem('consolius_tour_done')) {
+                setTimeout(() => { tourStart(); }, 600);
+            }
+        }
+        return;
+    }
+
+    // Play spaceship loading animation between screen transitions
+    playLoadingAnimation(() => {
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(s => {
+            s.classList.remove('active', 'fading-out');
+        });
+        const target = document.getElementById(targetId);
+        if (target) {
+            target.classList.add('active');
+        }
+        // Auto-start tour on first IDE visit
+        if (targetId === 'screen-ide' && !_hasVisitedIDE) {
+            _hasVisitedIDE = true;
+            if (!localStorage.getItem('consolius_tour_done')) {
+                setTimeout(() => { tourStart(); }, 600);
+            }
         }
     });
-    const target = document.getElementById(targetId);
-    if (target) {
-        // Small frame delay so fading-out has started first
-        requestAnimationFrame(() => {
-            target.classList.remove('fading-out');
-            target.classList.add('active');
-        });
-    }
 }
 
 function setControlHubTab(tabId) {
@@ -767,6 +906,18 @@ function setControlHubTab(tabId) {
     
     document.getElementById(`tab-btn-${tabId}`).classList.add('active');
     document.getElementById(`hub-section-${tabId}`).style.display = 'block';
+}
+
+function setBuilderSubPage(pageId) {
+    playSound('click');
+    document.querySelectorAll('.builder-subtabs .subtab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.builder-page').forEach(page => page.style.display = 'none');
+    
+    document.getElementById(`subtab-${pageId}`).classList.add('active');
+    const pageEl = document.getElementById(`builder-page-${pageId}`);
+    if (pageEl) {
+        pageEl.style.display = 'flex';
+    }
 }
 
 function showNotification(text) {
@@ -1100,49 +1251,475 @@ function proxyReload() {
    BOOT UP LOADER SIMULATOR
    ========================================= */
 function runBootSequence() {
-    const bootContainer = document.getElementById('boot-log-container');
-    const mainContent = document.getElementById('terminal-main-content');
-    const welcomeOutput = document.getElementById('main-term-output');
-    
-    bootContainer.style.display = 'block';
-    mainContent.style.display = 'none';
-    
-    const lines = [
-        "Initializing CONSOLIUS CORE OS v3.0...",
-        "Allocating memory heap partitions...",
-        "Checking visibility event registry [ OK ]",
-        "Binding browser iframe audio intercept layers...",
-        "Setting layout nodes & grid systems...",
-        "Compiling custom theme stylesheets...",
-        "System diagnostics completed. Launching prompt."
-    ];
-    
-    let lineIdx = 0;
-    
-    function printBootLine() {
-        if (lineIdx < lines.length) {
-            const div = document.createElement('div');
-            div.innerText = `> ${lines[lineIdx]} [OK]`;
-            bootContainer.appendChild(div);
-            lineIdx++;
-            playSound('click');
-            setTimeout(printBootLine, 120 + Math.random() * 80);
+    // Show spaceship loading animation first, then boot text sequence
+    playLoadingAnimation(() => {
+        const bootContainer = document.getElementById('boot-log-container');
+        const mainContent = document.getElementById('terminal-main-content');
+        const welcomeOutput = document.getElementById('main-term-output');
+        
+        bootContainer.style.display = 'block';
+        mainContent.style.display = 'none';
+        
+        const lines = [
+            "Initializing CONSOLIUS CORE OS v3.0...",
+            "Allocating memory heap partitions...",
+            "Checking visibility event registry [ OK ]",
+            "Binding browser iframe audio intercept layers...",
+            "Setting layout nodes & grid systems...",
+            "Compiling custom theme stylesheets...",
+            "System diagnostics completed. Launching prompt."
+        ];
+        
+        let lineIdx = 0;
+        
+        function printBootLine() {
+            if (lineIdx < lines.length) {
+                const div = document.createElement('div');
+                div.innerText = `> ${lines[lineIdx]} [OK]`;
+                bootContainer.appendChild(div);
+                lineIdx++;
+                playSound('click');
+                setTimeout(printBootLine, 120 + Math.random() * 80);
+            } else {
+                setTimeout(() => {
+                    bootContainer.style.display = 'none';
+                    mainContent.style.display = 'block';
+                    welcomeOutput.innerHTML = '';
+                    printLine("Welcome to CONSOLIUS OS v3.0", "main", "var(--console-accent)");
+                    printLine("Type 'help' for a list of commands, or 'tour' to start the guide.", "main", "#888899");
+                    printLine("Type 'ui' to open the UI Builder Control Hub.", "main", "#888899");
+                    playSound('success');
+                    
+                    const mainIn = document.getElementById('main-term-input');
+                    if (mainIn) mainIn.focus();
+                }, 500);
+            }
+        }
+        printBootLine();
+    });
+}
+
+/* =========================================
+   SPACESHIP WARP FLIGHT LOADING ANIMATION
+   ========================================= */
+function playLoadingAnimation(onComplete) {
+    const overlay = document.getElementById('screen-loading');
+    const canvas = document.getElementById('loading-canvas');
+    if (!overlay || !canvas) { if (onComplete) onComplete(); return; }
+
+    overlay.style.display = 'block';
+    const ctx = canvas.getContext('2d');
+    let W, H;
+
+    function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+    }
+    resize();
+
+    // Phase timing
+    const PHASE_FLY = 3200;     // Flying through space with asteroids
+    const PHASE_APPROACH = 1800; // Moon glides in, ship approaches
+    const PHASE_LAND = 1200;    // Ship spins and lands
+    const TOTAL = PHASE_FLY + PHASE_APPROACH + PHASE_LAND;
+
+    const startTime = performance.now();
+
+    // Stars
+    const stars = [];
+    for (let i = 0; i < 200; i++) {
+        stars.push({
+            x: Math.random() * 2000 - 500,
+            y: Math.random() * 2000 - 500,
+            z: Math.random() * 1500 + 100,
+            size: Math.random() * 2 + 0.5
+        });
+    }
+
+    // Asteroids
+    const asteroids = [];
+    for (let i = 0; i < 12; i++) {
+        asteroids.push({
+            x: Math.random() * 800 - 400,
+            y: Math.random() * 600 - 300,
+            z: 1200 + Math.random() * 2000,
+            size: 10 + Math.random() * 25,
+            rot: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.04,
+            craters: Math.floor(Math.random() * 4) + 2,
+            hue: 20 + Math.random() * 30
+        });
+    }
+
+    // Moon state
+    let moonX = -300;
+    let moonTargetX;
+    const moonY_ratio = 0.55;
+    const moonRadius = Math.min(W, H) * 0.18;
+
+    // Ship state
+    let shipX, shipY, shipAngle = 0;
+    let shipTargetX, shipTargetY;
+    const shipSize = 28;
+
+    // Ship exhaust particles
+    const exhaust = [];
+
+    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+    function easeInOutQuad(t) { return t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2; }
+
+    function drawStar(sx, sy, brightness, size) {
+        ctx.beginPath();
+        ctx.arc(sx, sy, size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200, 220, 255, ${brightness})`;
+        ctx.fill();
+        // Subtle glow on brighter stars
+        if (brightness > 0.6) {
+            ctx.beginPath();
+            ctx.arc(sx, sy, size * 3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(180, 210, 255, ${brightness * 0.15})`;
+            ctx.fill();
+        }
+    }
+
+    function drawAsteroid(ax, ay, size, rot, craters, hue) {
+        ctx.save();
+        ctx.translate(ax, ay);
+        ctx.rotate(rot);
+
+        // Lumpy asteroid shape
+        ctx.beginPath();
+        const points = 8;
+        for (let i = 0; i <= points; i++) {
+            const angle = (i / points) * Math.PI * 2;
+            const wobble = 0.7 + 0.3 * Math.sin(angle * 3.7 + rot);
+            const r = size * wobble;
+            if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+            else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+        }
+        ctx.closePath();
+        ctx.fillStyle = `hsl(${hue}, 15%, 28%)`;
+        ctx.fill();
+        ctx.strokeStyle = `hsl(${hue}, 10%, 18%)`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Craters
+        for (let c = 0; c < craters; c++) {
+            const ca = (c / craters) * Math.PI * 2 + 0.5;
+            const cr = size * 0.4;
+            ctx.beginPath();
+            ctx.arc(Math.cos(ca) * cr, Math.sin(ca) * cr, size * 0.12, 0, Math.PI * 2);
+            ctx.fillStyle = `hsl(${hue}, 10%, 20%)`;
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function drawMoon(mx, my, radius) {
+        // Full moon glow
+        const grad = ctx.createRadialGradient(mx, my, radius * 0.2, mx, my, radius * 2.5);
+        grad.addColorStop(0, 'rgba(200, 210, 230, 0.12)');
+        grad.addColorStop(1, 'rgba(200, 210, 230, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(mx - radius * 3, my - radius * 3, radius * 6, radius * 6);
+
+        // Moon body - full moon (not crescent)
+        ctx.beginPath();
+        ctx.arc(mx, my, radius, 0, Math.PI * 2);
+        const moonGrad = ctx.createRadialGradient(mx - radius * 0.3, my - radius * 0.3, 0, mx, my, radius);
+        moonGrad.addColorStop(0, '#e8e4de');
+        moonGrad.addColorStop(0.6, '#c8c4bb');
+        moonGrad.addColorStop(1, '#9a968e');
+        ctx.fillStyle = moonGrad;
+        ctx.fill();
+
+        // Crater details on full moon
+        const craterData = [
+            { x: -0.25, y: -0.2, r: 0.12 },
+            { x: 0.2, y: -0.35, r: 0.08 },
+            { x: 0.1, y: 0.2, r: 0.15 },
+            { x: -0.35, y: 0.15, r: 0.07 },
+            { x: 0.3, y: 0.05, r: 0.1 },
+            { x: -0.1, y: 0.35, r: 0.06 },
+            { x: -0.05, y: -0.45, r: 0.05 }
+        ];
+        craterData.forEach(c => {
+            ctx.beginPath();
+            ctx.arc(mx + c.x * radius, my + c.y * radius, c.r * radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(100, 95, 85, 0.35)';
+            ctx.fill();
+            // Inner shadow
+            ctx.beginPath();
+            ctx.arc(mx + c.x * radius + 1, my + c.y * radius + 1, c.r * radius * 0.7, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(80, 75, 65, 0.2)';
+            ctx.fill();
+        });
+    }
+
+    function drawShip(sx, sy, angle, thrust) {
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(angle);
+
+        // Ship body
+        ctx.beginPath();
+        ctx.moveTo(0, -shipSize);
+        ctx.lineTo(-shipSize * 0.6, shipSize * 0.5);
+        ctx.lineTo(-shipSize * 0.3, shipSize * 0.7);
+        ctx.lineTo(0, shipSize * 0.5);
+        ctx.lineTo(shipSize * 0.3, shipSize * 0.7);
+        ctx.lineTo(shipSize * 0.6, shipSize * 0.5);
+        ctx.closePath();
+
+        const shipGrad = ctx.createLinearGradient(0, -shipSize, 0, shipSize);
+        shipGrad.addColorStop(0, '#e0e8ff');
+        shipGrad.addColorStop(0.4, '#8899cc');
+        shipGrad.addColorStop(1, '#445577');
+        ctx.fillStyle = shipGrad;
+        ctx.fill();
+        ctx.strokeStyle = '#aabbdd';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Cockpit window
+        ctx.beginPath();
+        ctx.arc(0, -shipSize * 0.2, shipSize * 0.18, 0, Math.PI * 2);
+        ctx.fillStyle = '#00ffcc';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, -shipSize * 0.22, shipSize * 0.1, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.fill();
+
+        // Thrust exhaust
+        if (thrust) {
+            const flicker = 0.7 + Math.random() * 0.3;
+            const exhaustLen = shipSize * (0.8 + Math.random() * 0.6);
+            ctx.beginPath();
+            ctx.moveTo(-shipSize * 0.2, shipSize * 0.6);
+            ctx.lineTo(0, shipSize * 0.6 + exhaustLen * flicker);
+            ctx.lineTo(shipSize * 0.2, shipSize * 0.6);
+            ctx.closePath();
+            const exGrad = ctx.createLinearGradient(0, shipSize * 0.6, 0, shipSize * 0.6 + exhaustLen);
+            exGrad.addColorStop(0, 'rgba(0, 255, 204, 0.9)');
+            exGrad.addColorStop(0.4, 'rgba(0, 180, 255, 0.6)');
+            exGrad.addColorStop(1, 'rgba(0, 100, 255, 0)');
+            ctx.fillStyle = exGrad;
+            ctx.fill();
+
+            // Outer glow
+            ctx.beginPath();
+            ctx.moveTo(-shipSize * 0.35, shipSize * 0.55);
+            ctx.lineTo(0, shipSize * 0.6 + exhaustLen * flicker * 1.2);
+            ctx.lineTo(shipSize * 0.35, shipSize * 0.55);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(0, 255, 200, 0.08)';
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    function addExhaustParticle(sx, sy) {
+        exhaust.push({
+            x: sx + (Math.random() - 0.5) * 8,
+            y: sy,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: Math.random() * 3 + 1,
+            life: 1,
+            size: Math.random() * 3 + 1
+        });
+    }
+
+    function updateExhaust() {
+        for (let i = exhaust.length - 1; i >= 0; i--) {
+            const p = exhaust[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.03;
+            if (p.life <= 0) exhaust.splice(i, 1);
+        }
+    }
+
+    function drawExhaust() {
+        exhaust.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0, 255, 204, ${p.life * 0.4})`;
+            ctx.fill();
+        });
+    }
+
+    // Loading progress text
+    function drawLoadingText(progress) {
+        const pct = Math.floor(progress * 100);
+        ctx.font = '600 12px "Fira Code", monospace';
+        ctx.fillStyle = 'rgba(0, 255, 204, 0.7)';
+        ctx.textAlign = 'center';
+        ctx.fillText(`LOADING CONSOLIUS... ${pct}%`, W / 2, H - 40);
+
+        // Progress bar
+        const barW = 200, barH = 3;
+        const barX = (W - barW) / 2, barY = H - 25;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.fillStyle = 'rgba(0, 255, 204, 0.6)';
+        ctx.fillRect(barX, barY, barW * progress, barH);
+    }
+
+    function frame(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / TOTAL, 1);
+
+        resize();
+        ctx.clearRect(0, 0, W, H);
+
+        // Deep space background gradient
+        const bgGrad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W, H) * 0.7);
+        bgGrad.addColorStop(0, '#06080e');
+        bgGrad.addColorStop(0.5, '#030406');
+        bgGrad.addColorStop(1, '#010102');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, W, H);
+
+        // -- WARP STARS --
+        const warpSpeed = elapsed < PHASE_FLY ? 1 + (elapsed / PHASE_FLY) * 4 : 5 - (elapsed - PHASE_FLY) / (TOTAL - PHASE_FLY) * 4.5;
+        stars.forEach(s => {
+            s.z -= warpSpeed * 6;
+            if (s.z < 1) {
+                s.z = 1500;
+                s.x = Math.random() * 2000 - 500;
+                s.y = Math.random() * 2000 - 500;
+            }
+            const sx = (s.x / s.z) * W * 0.5 + W / 2;
+            const sy = (s.y / s.z) * H * 0.5 + H / 2;
+            const brightness = Math.min(1, (1500 - s.z) / 600);
+
+            // Draw warp streak in flying phase
+            if (elapsed < PHASE_FLY + PHASE_APPROACH * 0.5 && warpSpeed > 1.5) {
+                const streakLen = warpSpeed * 3;
+                const prevZ = s.z + warpSpeed * 6;
+                const prevSx = (s.x / prevZ) * W * 0.5 + W / 2;
+                const prevSy = (s.y / prevZ) * H * 0.5 + H / 2;
+                ctx.beginPath();
+                ctx.moveTo(prevSx, prevSy);
+                ctx.lineTo(sx, sy);
+                ctx.strokeStyle = `rgba(180, 210, 255, ${brightness * 0.6})`;
+                ctx.lineWidth = s.size * 0.6;
+                ctx.stroke();
+            }
+            drawStar(sx, sy, brightness, s.size);
+        });
+
+        // -- PHASE 1: Flying through space dodging asteroids --
+        if (elapsed < PHASE_FLY) {
+            const flyT = elapsed / PHASE_FLY;
+
+            // Ship position - center, with sine-wave dodging
+            shipX = W / 2 + Math.sin(flyT * Math.PI * 6) * 60;
+            shipY = H * 0.55 + Math.cos(flyT * Math.PI * 4) * 20;
+            shipAngle = Math.sin(flyT * Math.PI * 6) * -0.15; // Subtle tilt while dodging
+
+            // Draw asteroids flying past
+            asteroids.forEach(a => {
+                a.z -= 12;
+                a.rot += a.rotSpeed;
+                if (a.z < -100) {
+                    a.z = 2200 + Math.random() * 800;
+                    a.x = Math.random() * 800 - 400;
+                    a.y = Math.random() * 600 - 300;
+                }
+                if (a.z > 0) {
+                    const ax = (a.x / a.z) * W * 0.5 + W / 2;
+                    const ay = (a.y / a.z) * H * 0.5 + H / 2;
+                    const scale = 300 / a.z;
+                    drawAsteroid(ax, ay, a.size * scale, a.rot, a.craters, a.hue);
+                }
+            });
+
+            // Draw ship with thrust
+            drawShip(shipX, shipY, shipAngle, true);
+            if (Math.random() > 0.3) addExhaustParticle(shipX, shipY + shipSize * 0.7);
+
+        // -- PHASE 2: Moon glides in from left, ship approaches --
+        } else if (elapsed < PHASE_FLY + PHASE_APPROACH) {
+            const approachT = (elapsed - PHASE_FLY) / PHASE_APPROACH;
+            const easedT = easeOutCubic(approachT);
+
+            // Moon glides in smoothly from the left
+            moonTargetX = W * 0.5;
+            moonX = -moonRadius * 2 + (moonTargetX + moonRadius * 2) * easedT;
+            const moonY = H * moonY_ratio;
+            drawMoon(moonX, moonY, moonRadius);
+
+            // Ship moves toward moon center
+            shipX = W / 2 + (1 - easedT) * 80 * Math.sin(approachT * Math.PI * 3);
+            shipY = H * 0.55 - easedT * (H * 0.55 - moonY + moonRadius + 60);
+            shipAngle = (1 - easedT) * Math.sin(approachT * Math.PI * 4) * 0.1;
+
+            drawShip(shipX, shipY, shipAngle, true);
+            if (Math.random() > 0.4) addExhaustParticle(shipX, shipY + shipSize * 0.7);
+
+        // -- PHASE 3: Ship spins and lands on moon --
         } else {
+            const landT = (elapsed - PHASE_FLY - PHASE_APPROACH) / PHASE_LAND;
+            const easedLand = easeInOutQuad(Math.min(landT, 1));
+
+            // Moon stays in final position
+            const moonY = H * moonY_ratio;
+            drawMoon(W * 0.5, moonY, moonRadius);
+
+            // Ship spins (2 full rotations) then settles upright on moon surface
+            const spinAmount = (1 - easedLand) * Math.PI * 4;
+            const landingY = moonY - moonRadius - shipSize * 0.5;
+
+            shipX = W / 2;
+            shipY = shipY + (landingY - shipY) * easedLand * 0.3;
+            if (landT < 0.1) {
+                shipY = H * 0.55 - (H * 0.55 - moonY + moonRadius + 60); // from approach end
+            }
+            shipY = (1 - easedLand) * (moonY - moonRadius - 80) + easedLand * landingY;
+            shipAngle = spinAmount;
+
+            drawShip(shipX, shipY, shipAngle, landT < 0.7);
+            if (landT < 0.5 && Math.random() > 0.5) addExhaustParticle(shipX, shipY + shipSize * 0.7);
+
+            // Landing dust effect
+            if (landT > 0.6 && landT < 0.9) {
+                const dustAlpha = (1 - (landT - 0.6) / 0.3) * 0.3;
+                for (let d = 0; d < 5; d++) {
+                    const dx = shipX + (Math.random() - 0.5) * 60;
+                    const dy = landingY + shipSize + Math.random() * 10;
+                    ctx.beginPath();
+                    ctx.arc(dx, dy, 2 + Math.random() * 4, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(180, 170, 150, ${dustAlpha})`;
+                    ctx.fill();
+                }
+            }
+        }
+
+        updateExhaust();
+        drawExhaust();
+        drawLoadingText(progress);
+
+        if (elapsed < TOTAL) {
+            requestAnimationFrame(frame);
+        } else {
+            // Fade out
+            overlay.style.transition = 'opacity 0.5s ease';
+            overlay.style.opacity = '0';
             setTimeout(() => {
-                bootContainer.style.display = 'none';
-                mainContent.style.display = 'block';
-                welcomeOutput.innerHTML = '';
-                printLine("Welcome to CONSOLIUS OS v3.0", "main", "var(--console-accent)");
-                printLine("Type 'help' for a list of commands, or 'tour' to start the guide.", "main", "#888899");
-                printLine("Type 'ui' to open the UI Builder Control Hub.", "main", "#888899");
-                playSound('success');
-                
-                const mainIn = document.getElementById('main-term-input');
-                if (mainIn) mainIn.focus();
+                overlay.style.display = 'none';
+                overlay.style.opacity = '1';
+                overlay.style.transition = '';
+                exhaust.length = 0;
+                if (onComplete) onComplete();
             }, 500);
         }
     }
-    printBootLine();
+
+    requestAnimationFrame(frame);
 }
 
 /* =========================================
@@ -1191,12 +1768,18 @@ function renderTabs() {
     tabs.forEach(tab => {
         const div = document.createElement('div');
         div.className = `tab ${tab.id === activeTabId ? 'active' : ''}`;
-        div.onclick = () => switchTab(tab.id);
+        
+        // Click anywhere on the tab to switch (not on contenteditable title)
+        div.onclick = (e) => {
+            // Don't switch if clicking on contenteditable title (let dblclick handle rename)
+            if (e.target.classList.contains('tab-title-text') && e.target.isContentEditable) return;
+            switchTab(tab.id);
+        };
         
         // Tab row header + closed cross + custom volume slider inputs
         div.innerHTML = `
             <div class="tab-header-row">
-                <span class="tab-title-text" contenteditable="true" onblur="renameTab('${tab.id}', this.innerText)" onclick="event.stopPropagation()">${tab.name}</span>
+                <span class="tab-title-text" data-tab-id="${tab.id}">${tab.name}</span>
                 <div class="tab-controls-right">
                     <button class="tab-close" onclick="closeTab(event, '${tab.id}')"><i class="fa-solid fa-xmark"></i></button>
                 </div>
@@ -1206,6 +1789,35 @@ function renderTabs() {
                 <input type="range" class="tab-volume-slider" min="0" max="1" step="0.05" value="${tab.volume !== undefined ? tab.volume : 1.0}" oninput="setTabVolume('${tab.id}', this.value)">
             </div>
         `;
+
+        // Double-click on title to enable rename
+        const titleSpan = div.querySelector('.tab-title-text');
+        titleSpan.addEventListener('click', (e) => {
+            e.stopPropagation();
+            switchTab(tab.id); // Single click still switches tab
+        });
+        titleSpan.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            titleSpan.contentEditable = 'true';
+            titleSpan.focus();
+            // Select all text
+            const range = document.createRange();
+            range.selectNodeContents(titleSpan);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        });
+        titleSpan.addEventListener('blur', () => {
+            titleSpan.contentEditable = 'false';
+            renameTab(tab.id, titleSpan.innerText);
+        });
+        titleSpan.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                titleSpan.blur();
+            }
+        });
+
         list.appendChild(div);
     });
 }
@@ -1451,6 +2063,7 @@ function exportToZip() {
    RESIZERS
    ========================================= */
 function setupResizers() {
+    const MIN_PANEL_WIDTH = 80; // Minimum panel width to prevent collapse
     document.querySelectorAll('.resizer').forEach(resizer => {
         resizer.addEventListener('mousedown', e => {
             e.preventDefault();
@@ -1460,8 +2073,13 @@ function setupResizers() {
             
             function mouseMove(ev) {
                 const deltaX = ev.clientX - prevX;
-                left.style.flex = `0 0 ${prevLeftSize + deltaX}px`; 
-                right.style.flex = `0 0 ${prevRightSize - deltaX}px`;
+                const newLeft = prevLeftSize + deltaX;
+                const newRight = prevRightSize - deltaX;
+                // Enforce minimum width constraint on both panels
+                if (newLeft >= MIN_PANEL_WIDTH && newRight >= MIN_PANEL_WIDTH) {
+                    left.style.flex = `0 0 ${newLeft}px`; 
+                    right.style.flex = `0 0 ${newRight}px`;
+                }
             }
             function mouseUp() { window.removeEventListener('mousemove', mouseMove); window.removeEventListener('mouseup', mouseUp); }
             window.addEventListener('mousemove', mouseMove); window.addEventListener('mouseup', mouseUp);
@@ -1605,7 +2223,7 @@ function showTourStep(index) {
     // Switch active view screens to render appropriate tabs if needed
     if (step.element === '#sidebar' || step.element.includes('panel') || step.element === '#output-area') {
         if (!document.getElementById('screen-ide').classList.contains('active')) {
-            executeCommand('ide');
+            switchScreen('screen-ide', true);
         }
     }
     
@@ -1615,39 +2233,73 @@ function showTourStep(index) {
         const spotlight = document.getElementById('tour-spotlight');
         const tooltip = document.getElementById('tour-tooltip');
         
-        // Glide spotlight cutout to the coordinates
-        spotlight.style.top = `${rect.top + window.scrollY}px`;
-        spotlight.style.left = `${rect.left + window.scrollX}px`;
-        spotlight.style.width = `${rect.width}px`;
-        spotlight.style.height = `${rect.height}px`;
+        // Check if the target is full-screen sized (covers most of viewport)
+        const isFullScreen = rect.width >= window.innerWidth * 0.8 && rect.height >= window.innerHeight * 0.8;
         
-        // Tooltip updates
+        if (isFullScreen) {
+            // For full-screen targets, use a smaller centered spotlight + center tooltip
+            const spotW = Math.min(400, window.innerWidth * 0.5);
+            const spotH = Math.min(200, window.innerHeight * 0.25);
+            const spotX = (window.innerWidth - spotW) / 2;
+            const spotY = (window.innerHeight - spotH) / 2 - 60;
+
+            spotlight.style.top = `${spotY}px`;
+            spotlight.style.left = `${spotX}px`;
+            spotlight.style.width = `${spotW}px`;
+            spotlight.style.height = `${spotH}px`;
+
+            // Center tooltip below spotlight
+            const ttTop = spotY + spotH + 20;
+            const ttLeft = (window.innerWidth - 280) / 2;
+            tooltip.style.top = `${ttTop}px`;
+            tooltip.style.left = `${ttLeft}px`;
+        } else {
+            // Normal spotlight positioning
+            spotlight.style.top = `${rect.top + window.scrollY}px`;
+            spotlight.style.left = `${rect.left + window.scrollX}px`;
+            spotlight.style.width = `${rect.width}px`;
+            spotlight.style.height = `${rect.height}px`;
+
+            // Compute relative tooltip positions
+            let ttTop = rect.bottom + 16;
+            let ttLeft = rect.left + (rect.width / 2) - 140;
+            
+            // Out of viewport safeguards
+            if (ttTop + 200 > window.innerHeight) {
+                ttTop = rect.top - 200 - 16;
+            }
+            if (ttTop < 10) {
+                // If still off-screen, center vertically
+                ttTop = (window.innerHeight - 180) / 2;
+            }
+            if (ttLeft < 10) ttLeft = 10;
+            if (ttLeft + 280 > window.innerWidth) ttLeft = window.innerWidth - 290;
+            
+            tooltip.style.top = `${ttTop}px`;
+            tooltip.style.left = `${ttLeft}px`;
+        }
+        
+        // Tooltip content updates
         document.getElementById('tour-title').innerText = step.title;
         document.getElementById('tour-text').innerText = step.text;
         document.getElementById('tour-step').innerText = `${index + 1} / ${tourSteps.length}`;
         
         const nextBtn = document.getElementById('tour-btn-next');
-        nextBtn.innerText = index === tourSteps.length - 1 ? "Finish" : "Next";
+        nextBtn.innerText = index === tourSteps.length - 1 ? "Finish ✨" : "Next →";
         
-        // Compute relative positions
-        let ttTop = rect.bottom + 16;
-        let ttLeft = rect.left + (rect.width / 2) - 140;
-        
-        // Out of viewport safeguards
-        if (ttTop + 180 > window.innerHeight) {
-            ttTop = rect.top - 180 - 16;
-        }
-        if (ttLeft < 10) ttLeft = 10;
-        if (ttLeft + 280 > window.innerWidth) ttLeft = window.innerWidth - 290;
-        
-        tooltip.style.top = `${ttTop}px`;
-        tooltip.style.left = `${ttLeft}px`;
-        tooltip.classList.add('active');
+        // Smooth entrance with a slight pop
+        tooltip.classList.remove('active');
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                tooltip.classList.add('active');
+            });
+        });
         playSound('click');
-    }, 150);
+    }, 200);
 }
 
 function tourNext() {
+    playSound('click');
     showTourStep(currentTourStep + 1);
 }
 
@@ -1664,8 +2316,11 @@ function tourEnd() {
     spotlight.style.height = '0px';
     spotlight.style.display = 'none';
     
+    // Mark tour as completed for first-visit auto-trigger
+    localStorage.setItem('consolius_tour_done', 'true');
+    
     playSound('success');
-    showNotification("Consolius Tour guide finished.");
+    showNotification("🚀 Consolius Tour complete! You're all set.");
 }
 
 /* =========================================

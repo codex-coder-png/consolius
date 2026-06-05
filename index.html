@@ -217,153 +217,196 @@
                 <!-- TAB 1: CUSTOM UI BUILDER -->
                 <div id="hub-section-style" class="hub-section active-section">
                     <!-- UI Target buttons: Console or IDE -->
-                    <div style="display:flex; gap:10px; margin-bottom:15px; background:rgba(0,0,0,0.2); padding:6px; border-radius:8px;">
+                    <div style="display:flex; gap:10px; margin-bottom:12px; background:rgba(0,0,0,0.2); padding:6px; border-radius:8px;">
                         <span style="font-size:11px; color:#888899; display:flex; align-items:center; margin-left:8px;">Target UI Component:</span>
-                        <button class="toolbar-btn" id="target-ui-console-btn" onclick="selectUiTarget('console')" style="flex:1; justify-content:center;"><i class="fa-solid fa-terminal"></i> Console UI</button>
-                        <button class="toolbar-btn active" id="target-ui-ide-btn" onclick="selectUiTarget('ide')" style="flex:1; justify-content:center;"><i class="fa-solid fa-code"></i> IDE UI</button>
+                        <button class="toolbar-btn" id="target-ui-console-btn" onclick="selectUiTarget('console')" style="flex:1; justify-content:center; padding:5px 8px; font-size:11px;"><i class="fa-solid fa-terminal"></i> Console UI</button>
+                        <button class="toolbar-btn active" id="target-ui-ide-btn" onclick="selectUiTarget('ide')" style="flex:1; justify-content:center; padding:5px 8px; font-size:11px;"><i class="fa-solid fa-code"></i> IDE UI</button>
                     </div>
 
-                    <!-- Hierarchy foldout list -->
-                    <div style="display:flex; flex-direction:column; gap:12px;">
-                        
-                        <!-- Hierarchy: Font settings -->
-                        <div class="style-hierarchy-section cat-font" id="foldout-font">
-                            <div class="style-hierarchy-header" onclick="toggleFoldout('font')"><i class="fa-solid fa-font"></i> Typography Settings</div>
-                            <div class="style-hierarchy-content">
-                                <div class="control-row">
-                                    <span>Font Family</span>
-                                    <select id="builder-font-family" onchange="applyBuilderChange('font-family')">
-                                        <option value="'Fira Code', monospace">Fira Code (Monospace)</option>
-                                        <option value="'Inter', sans-serif">Inter (Modern Clean)</option>
-                                        <option value="'Outfit', sans-serif">Outfit (Premium Bold)</option>
-                                        <option value="'Roboto', sans-serif">Roboto (Structured)</option>
-                                        <option value="'Comic Neue', cursive">Comic Neue (Playful)</option>
-                                    </select>
-                                </div>
-                                <div class="control-row">
-                                    <span>Font Weight</span>
-                                    <select id="builder-font-weight" onchange="applyBuilderChange('font-weight')">
-                                        <option value="400">Regular</option>
-                                        <option value="600">Semi Bold</option>
-                                        <option value="800">Extra Bold</option>
-                                    </select>
-                                </div>
-                                <div class="control-row">
-                                    <span>Main UI Font Size</span>
-                                    <div class="control-input-wrapper">
-                                        <input type="range" id="builder-font-size" min="11" max="22" value="13" oninput="applyBuilderChange('font-size')">
-                                        <span class="control-slider-val" id="val-font-size">13px</span>
-                                    </div>
-                                </div>
-                                <div class="control-row" id="row-editor-font-size">
-                                    <span>Code Editor Font Size</span>
-                                    <div class="control-input-wrapper">
-                                        <input type="range" id="builder-editor-font-size" min="10" max="24" value="13" oninput="applyBuilderChange('editor-font-size')">
-                                        <span class="control-slider-val" id="val-editor-font-size">13px</span>
-                                    </div>
-                                </div>
+                    <!-- Inner Sub-Tabs Navigation for UI Builder Pages -->
+                    <div class="builder-subtabs" style="display:flex; gap:4px; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px; overflow-x:auto;">
+                        <button class="subtab-btn active" id="subtab-typo" onclick="setBuilderSubPage('typo')"><i class="fa-solid fa-font"></i> Typography</button>
+                        <button class="subtab-btn" id="subtab-spacing" onclick="setBuilderSubPage('spacing')"><i class="fa-solid fa-arrows-left-right"></i> Spacing</button>
+                        <button class="subtab-btn" id="subtab-colors" onclick="setBuilderSubPage('colors')"><i class="fa-solid fa-palette"></i> Colors & Glow</button>
+                        <button class="subtab-btn" id="subtab-borders" onclick="setBuilderSubPage('borders')"><i class="fa-solid fa-square"></i> Borders & Blur</button>
+                        <button class="subtab-btn" id="subtab-layout" onclick="setBuilderSubPage('layout')"><i class="fa-solid fa-layer-group"></i> Layout & View</button>
+                    </div>
+
+                    <!-- Sub-page 1: Typography -->
+                    <div id="builder-page-typo" class="builder-page active-page" style="display:flex; flex-direction:column; gap:12px;">
+                        <div class="control-row">
+                            <span>Font Family</span>
+                            <select id="builder-font-family" onchange="applyBuilderChange('font-family')">
+                                <option value="'Fira Code', monospace">Fira Code (Monospace)</option>
+                                <option value="'Inter', sans-serif">Inter (Modern Clean)</option>
+                                <option value="'Outfit', sans-serif">Outfit (Premium Bold)</option>
+                                <option value="'Roboto', sans-serif">Roboto (Structured)</option>
+                                <option value="'Comic Neue', cursive">Comic Neue (Playful)</option>
+                            </select>
+                        </div>
+                        <div class="control-row">
+                            <span>Font Weight</span>
+                            <select id="builder-font-weight" onchange="applyBuilderChange('font-weight')">
+                                <option value="400">Regular</option>
+                                <option value="600">Semi Bold</option>
+                                <option value="800">Extra Bold</option>
+                            </select>
+                        </div>
+                        <div class="control-row">
+                            <span>Main UI Font Size</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-font-size" min="11" max="22" value="13" oninput="applyBuilderChange('font-size')">
+                                <span class="control-slider-val" id="val-font-size">13px</span>
                             </div>
                         </div>
-
-                        <!-- Hierarchy: Sizing & Gaps settings -->
-                        <div class="style-hierarchy-section cat-size" id="foldout-size">
-                            <div class="style-hierarchy-header" onclick="toggleFoldout('size')"><i class="fa-solid fa-maximize"></i> Layout Sizes & Spacing</div>
-                            <div class="style-hierarchy-content">
-                                <div class="control-row" id="row-sidebar-width">
-                                    <span>Sidebar Width</span>
-                                    <div class="control-input-wrapper">
-                                        <input type="range" id="builder-sidebar-width" min="180" max="400" value="260" oninput="applyBuilderChange('sidebar-width')">
-                                        <span class="control-slider-val" id="val-sidebar-width">260px</span>
-                                    </div>
-                                </div>
-                                <div class="control-row" id="row-grid-gap">
-                                    <span>Grid Spacing Gap</span>
-                                    <div class="control-input-wrapper">
-                                        <input type="range" id="builder-grid-gap" min="0" max="20" value="8" oninput="applyBuilderChange('grid-gap')">
-                                        <span class="control-slider-val" id="val-grid-gap">8px</span>
-                                    </div>
-                                </div>
-                                <div class="control-row">
-                                    <span>Padding Size</span>
-                                    <div class="control-input-wrapper">
-                                        <input type="range" id="builder-padding" min="4" max="32" value="12" oninput="applyBuilderChange('padding')">
-                                        <span class="control-slider-val" id="val-padding">12px</span>
-                                    </div>
-                                </div>
+                        <div class="control-row" id="row-editor-font-size">
+                            <span>Code Editor Font Size</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-editor-font-size" min="10" max="24" value="13" oninput="applyBuilderChange('editor-font-size')">
+                                <span class="control-slider-val" id="val-editor-font-size">13px</span>
                             </div>
                         </div>
-
-                        <!-- Hierarchy: Corner Settings -->
-                        <div class="style-hierarchy-section cat-corner" id="foldout-corner">
-                            <div class="style-hierarchy-header" onclick="toggleFoldout('corner')"><i class="fa-solid fa-shapes"></i> Corner Border Radii</div>
-                            <div class="style-hierarchy-content">
-                                <div class="control-row">
-                                    <span>Border Radius</span>
-                                    <div class="control-input-wrapper">
-                                        <input type="range" id="builder-border-radius" min="0" max="24" value="8" oninput="applyBuilderChange('border-radius')">
-                                        <span class="control-slider-val" id="val-border-radius">8px</span>
-                                    </div>
-                                </div>
-                                <div class="control-row">
-                                    <span>Border Width</span>
-                                    <div class="control-input-wrapper">
-                                        <input type="range" id="builder-border-width" min="0" max="4" value="1" oninput="applyBuilderChange('border-width')">
-                                        <span class="control-slider-val" id="val-border-width">1px</span>
-                                    </div>
-                                </div>
+                        <div class="control-row">
+                            <span>Line Height</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-line-height" min="1.0" max="2.2" step="0.1" value="1.4" oninput="applyBuilderChange('line-height')">
+                                <span class="control-slider-val" id="val-line-height">1.4</span>
                             </div>
                         </div>
-
-                        <!-- Hierarchy: Colors & Effects -->
-                        <div class="style-hierarchy-section cat-colors" id="foldout-colors">
-                            <div class="style-hierarchy-header" onclick="toggleFoldout('colors')"><i class="fa-solid fa-palette"></i> Colors & Glassmorphism</div>
-                            <div class="style-hierarchy-content">
-                                <div class="control-row">
-                                    <span>Background Color</span>
-                                    <input type="color" id="builder-color-bg" onchange="applyBuilderChange('color-bg')">
-                                </div>
-                                <div class="control-row" id="row-color-panel">
-                                    <span>Panel Background</span>
-                                    <input type="color" id="builder-color-panel" onchange="applyBuilderChange('color-panel')">
-                                </div>
-                                <div class="control-row" id="row-color-header">
-                                    <span>Header Background</span>
-                                    <input type="color" id="builder-color-header" onchange="applyBuilderChange('color-header')">
-                                </div>
-                                <div class="control-row">
-                                    <span>Accent color</span>
-                                    <input type="color" id="builder-color-accent" onchange="applyBuilderChange('color-accent')">
-                                </div>
-                                <div class="control-row">
-                                    <span>Text color</span>
-                                    <input type="color" id="builder-color-text" onchange="applyBuilderChange('color-text')">
-                                </div>
-                                <div class="control-row">
-                                    <span>Glass Blur Effect</span>
-                                    <div class="control-input-wrapper">
-                                        <input type="range" id="builder-glass-blur" min="0" max="25" value="10" oninput="applyBuilderChange('glass-blur')">
-                                        <span class="control-slider-val" id="val-glass-blur">10px</span>
-                                    </div>
-                                </div>
+                        <div class="control-row">
+                            <span>Letter Spacing</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-letter-spacing" min="-1.5" max="5.0" step="0.5" value="0.0" oninput="applyBuilderChange('letter-spacing')">
+                                <span class="control-slider-val" id="val-letter-spacing">0px</span>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Hierarchy: Layout Arrangement -->
-                        <div class="style-hierarchy-section cat-layout" id="foldout-layout">
-                            <div class="style-hierarchy-header" onclick="toggleFoldout('layout')"><i class="fa-solid fa-layer-group"></i> Layout Grid Settings</div>
-                            <div class="style-hierarchy-content">
-                                <div class="control-row" id="row-ide-layout">
-                                    <span>IDE Layout Template</span>
-                                    <select id="builder-layout-template" onchange="applyBuilderChange('layout-template')">
-                                        <option value="layout-standard">Classic Grid (Editors Left, Output Right)</option>
-                                        <option value="layout-vsplit">Workspace Columns (Editors Left / Middle / Right, Output Full Right)</option>
-                                        <option value="layout-stacked">Horizontal Row (Editors Top, Output Bottom)</option>
-                                        <option value="layout-3col">3-Column Grid (Sidebar, Code column, Output column)</option>
-                                    </select>
-                                </div>
+                    <!-- Sub-page 2: Spacing -->
+                    <div id="builder-page-spacing" class="builder-page" style="display:none; flex-direction:column; gap:12px;">
+                        <div class="control-row" id="row-sidebar-width">
+                            <span>Sidebar Width</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-sidebar-width" min="180" max="400" value="260" oninput="applyBuilderChange('sidebar-width')">
+                                <span class="control-slider-val" id="val-sidebar-width">260px</span>
                             </div>
                         </div>
+                        <div class="control-row" id="row-grid-gap">
+                            <span>Grid Spacing Gap</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-grid-gap" min="0" max="20" value="8" oninput="applyBuilderChange('grid-gap')">
+                                <span class="control-slider-val" id="val-grid-gap">8px</span>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <span>Padding Size</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-padding" min="4" max="32" value="12" oninput="applyBuilderChange('padding')">
+                                <span class="control-slider-val" id="val-padding">12px</span>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <span>Container Margins</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-margin-size" min="0" max="30" step="2" value="0" oninput="applyBuilderChange('margin-size')">
+                                <span class="control-slider-val" id="val-margin-size">0px</span>
+                            </div>
+                        </div>
+                    </div>
 
+                    <!-- Sub-page 3: Colors & Glow -->
+                    <div id="builder-page-colors" class="builder-page" style="display:none; flex-direction:column; gap:12px;">
+                        <div class="control-row">
+                            <span>Background Color</span>
+                            <input type="color" id="builder-color-bg" onchange="applyBuilderChange('color-bg')">
+                        </div>
+                        <div class="control-row" id="row-color-panel">
+                            <span>Panel Background</span>
+                            <input type="color" id="builder-color-panel" onchange="applyBuilderChange('color-panel')">
+                        </div>
+                        <div class="control-row" id="row-color-header">
+                            <span>Header Background</span>
+                            <input type="color" id="builder-color-header" onchange="applyBuilderChange('color-header')">
+                        </div>
+                        <div class="control-row">
+                            <span>Accent Color</span>
+                            <input type="color" id="builder-color-accent" onchange="applyBuilderChange('color-accent')">
+                        </div>
+                        <div class="control-row">
+                            <span>Text Color</span>
+                            <input type="color" id="builder-color-text" onchange="applyBuilderChange('color-text')">
+                        </div>
+                        <div class="control-row">
+                            <span>Accent Glow Depth</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-accent-glow" min="0" max="25" value="0" oninput="applyBuilderChange('accent-glow')">
+                                <span class="control-slider-val" id="val-accent-glow">0px</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-page 4: Borders & Blur -->
+                    <div id="builder-page-borders" class="builder-page" style="display:none; flex-direction:column; gap:12px;">
+                        <div class="control-row">
+                            <span>Border Radius</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-border-radius" min="0" max="24" value="8" oninput="applyBuilderChange('border-radius')">
+                                <span class="control-slider-val" id="val-border-radius">8px</span>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <span>Border Width</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-border-width" min="0" max="6" value="1" oninput="applyBuilderChange('border-width')">
+                                <span class="control-slider-val" id="val-border-width">1px</span>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <span>Border Style</span>
+                            <select id="builder-border-style" onchange="applyBuilderChange('border-style')">
+                                <option value="solid">Solid Line</option>
+                                <option value="dashed">Dashed Line</option>
+                                <option value="dotted">Dotted Line</option>
+                                <option value="double">Double Border</option>
+                                <option value="none">No Border</option>
+                            </select>
+                        </div>
+                        <div class="control-row">
+                            <span>Glass Blur Effect</span>
+                            <div class="control-input-wrapper">
+                                <input type="range" id="builder-glass-blur" min="0" max="25" value="10" oninput="applyBuilderChange('glass-blur')">
+                                <span class="control-slider-val" id="val-glass-blur">10px</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-page 5: Layout & View -->
+                    <div id="builder-page-layout" class="builder-page" style="display:none; flex-direction:column; gap:12px;">
+                        <div class="control-row" id="row-ide-layout">
+                            <span>IDE Layout Template</span>
+                            <select id="builder-layout-template" onchange="applyBuilderChange('layout-template')">
+                                <option value="layout-standard">Classic Grid (Editors Left, Output Right)</option>
+                                <option value="layout-vsplit">Workspace Columns (Editors Left / Middle / Right, Output Full Right)</option>
+                                <option value="layout-stacked">Horizontal Row (Editors Top, Output Bottom)</option>
+                                <option value="layout-3col">3-Column Grid (Sidebar, Code column, Output column)</option>
+                            </select>
+                        </div>
+                        <div class="control-row" style="margin-top:6px;">
+                            <span>Scale Style Center to Screen Size</span>
+                            <input type="checkbox" id="builder-scale-modal" onchange="applyBuilderChange('scale-modal')">
+                        </div>
+                        <div class="control-row" id="row-hide-html" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top:10px; margin-top:6px;">
+                            <span>Hide HTML Code Pane</span>
+                            <input type="checkbox" id="builder-hide-html" onchange="applyBuilderChange('hide-html')">
+                        </div>
+                        <div class="control-row" id="row-hide-css">
+                            <span>Hide CSS Code Pane</span>
+                            <input type="checkbox" id="builder-hide-css" onchange="applyBuilderChange('hide-css')">
+                        </div>
+                        <div class="control-row" id="row-hide-js">
+                            <span>Hide JavaScript Code Pane</span>
+                            <input type="checkbox" id="builder-hide-js" onchange="applyBuilderChange('hide-js')">
+                        </div>
                     </div>
                 </div>
 
@@ -441,6 +484,11 @@
                 <button class="tour-tooltip-btn primary" id="tour-btn-next" onclick="tourNext()">Next</button>
             </div>
         </div>
+    </div>
+
+    <!-- 7. SPACESHIP SPACE FLIGHT LOADING OVERLAY -->
+    <div id="screen-loading" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#020205; z-index:15000; overflow:hidden;">
+        <canvas id="loading-canvas" style="display:block; width:100%; height:100%;"></canvas>
     </div>
 
     <script src="script.js"></script>

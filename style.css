@@ -475,6 +475,13 @@ input, textarea, select, button {
     align-items: center;
     justify-content: center;
     gap: 8px;
+    position: relative;
+    user-select: none;
+    z-index: 1;
+    min-height: 42px;
+}
+.btn-ghost * {
+    pointer-events: none; /* Ensure clicks pass through child icons/text to the button */
 }
 .btn-ghost:hover { 
     border-color: var(--ide-accent); 
@@ -581,10 +588,12 @@ button.toolbar-btn:hover {
 .resizer { 
     background: var(--ide-border-color); 
     width: 6px; 
+    min-width: 6px;
     cursor: col-resize; 
     z-index: 5; 
     transition: background 0.2s;
     border-radius: 3px;
+    min-height: 30px;
 }
 .resizer:hover { 
     background: var(--ide-accent); 
@@ -1028,30 +1037,30 @@ select:focus, input[type="text"]:focus {
 
 /* The tooltip popover box that points to the spotlight */
 #tour-tooltip {
-    position: absolute;
-    width: 280px;
-    background: rgba(15, 15, 22, 0.95);
-    backdrop-filter: blur(12px);
+    position: fixed;
+    width: 300px;
+    background: rgba(12, 12, 20, 0.96);
+    backdrop-filter: blur(16px);
     border: 1px solid var(--console-accent);
-    border-radius: 8px;
-    padding: 16px;
+    border-radius: 12px;
+    padding: 20px;
     color: #fff;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 20px rgba(0, 255, 204, 0.08);
     z-index: 100001;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     font-family: var(--console-font);
     font-size: 12px;
     pointer-events: auto;
     opacity: 0;
-    transition: opacity 0.25s, transform 0.25s;
-    transform: translateY(10px);
+    transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), top 0.4s cubic-bezier(0.25, 1, 0.5, 1), left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    transform: translateY(16px) scale(0.95);
 }
 
 #tour-tooltip.active {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
 }
 
 .tour-tooltip-title {
@@ -1102,4 +1111,148 @@ select:focus, input[type="text"]:focus {
 }
 .tour-tooltip-btn.primary:hover {
     background: #ffffff;
+}
+
+/* ==========================================================================
+   8. BUILDER INNER PAGES & MODAL SCALING
+   ========================================================================== */
+.builder-subtabs {
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+}
+.builder-subtabs::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome/Safari */
+}
+
+.subtab-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #888899;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.subtab-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.subtab-btn.active {
+    background: var(--console-accent);
+    color: #000000;
+    border-color: var(--console-accent);
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
+}
+
+/* Modal Scaling styles to adapt customizer to full screen size */
+.modal.scaled {
+    width: 95vw !important;
+    height: 95vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.modal.scaled #control-hub-body {
+    flex: 1 !important;
+    display: flex !important;
+    gap: 24px !important;
+    overflow: hidden !important;
+    padding: 20px !important;
+}
+
+.modal.scaled .hub-section {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: 100% !important;
+}
+
+.modal.scaled .builder-page {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 16px !important;
+    overflow-y: auto !important;
+    flex: 1 !important;
+}
+
+.modal.scaled .control-row {
+    margin: 0 !important;
+    padding: 12px !important;
+    background: rgba(0, 0, 0, 0.15) !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.03) !important;
+}
+
+.modal.scaled .presets-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+    gap: 12px !important;
+}
+
+/* Expanded Dynamic Sizing Variables map hook values */
+#workspace {
+    margin: var(--ide-margin, 0px) !important;
+}
+
+.panel {
+    border-style: var(--ide-border-style, solid) !important;
+    box-shadow: var(--ide-panel-glow, none) !important;
+}
+
+#screen-ide {
+    line-height: var(--ide-line-height, 1.4) !important;
+    letter-spacing: var(--ide-letter-spacing, 0px) !important;
+}
+
+/* Sidebar tab title max width restrict */
+.tab-title-text {
+    max-width: 60% !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
+}
+.tab-title-text[contenteditable="true"] {
+    cursor: text;
+    outline: 1px solid var(--ide-accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+    padding: 1px 4px;
+    max-width: none !important;
+}
+
+/* Make btn-ghost click block fill its bounds - override from base */
+.btn-ghost {
+    position: relative;
+    user-select: none;
+}
+
+/* Loading screen - ensure it covers everything */
+#screen-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #020205;
+    z-index: 15000;
+    overflow: hidden;
+}
+
+#loading-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
