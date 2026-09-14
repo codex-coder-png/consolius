@@ -1,0 +1,3234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="app-title">CONSOLIUS | Advanced Web OS v5</title>
+    <link id="app-favicon" rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💻</text></svg>">
+
+    <!-- Design Stylesheets -->
+    <style>
+/* ==========================================================================
+   CONSOLIUS - CSS DESIGN SYSTEM & VARIABLES
+   ========================================================================== */
+
+:root {
+    /* --- Console Defaults --- */
+    --console-bg: #050508;
+    --console-text: #e0e0f0;
+    --console-accent: #00ffcc;
+    --console-font: 'Fira Code', monospace;
+    --console-font-size: 14px;
+    --console-radius: 6px;
+    --console-blur: 8px;
+    --console-padding: 24px;
+    --console-border: 1px solid rgba(0, 255, 204, 0.15);
+
+    /* --- IDE Defaults --- */
+    --ide-bg: #0d0d12;
+    --ide-sidebar-bg: #07070a;
+    --ide-panel-bg: #12121a;
+    --ide-header-bg: #09090d;
+    --ide-text: #e0e0ea;
+    --ide-accent: #ff007f;
+    --ide-font: 'Inter', sans-serif;
+    --ide-font-size: 13px;
+    --ide-radius: 8px;
+    --ide-blur: 10px;
+    --ide-sidebar-width: 260px;
+    --ide-editor-size: 13px;
+    --ide-gap: 8px;
+    --ide-border-color: rgba(255, 255, 255, 0.06);
+
+    /* --- Global & Animations --- */
+    --transition-speed: 0.3s;
+    --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-premium: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Resets */
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    user-select: none;
+}
+
+body {
+    background: var(--console-bg);
+    color: var(--console-text);
+    font-family: var(--console-font);
+    font-size: var(--console-font-size);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: background var(--transition-speed) var(--transition-curve),
+                color var(--transition-speed) var(--transition-curve);
+}
+
+input, textarea, select, button {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/* === SCREENS === */
+.screen { 
+    display: flex; 
+    flex-direction: column; 
+    width: 100%; 
+    height: 100%; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+    transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+    /* Start hidden without display:none so transitions work */
+    visibility: hidden;
+}
+.screen.active { 
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 10;
+}
+/* When transitioning OUT, keep visible until fully faded */
+.screen.fading-out {
+    visibility: visible;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* ==========================================================================
+   1. CONSOLIUS BOOT & MAIN TERMINAL
+   ========================================================================== */
+
+#screen-terminal { 
+    background: var(--console-bg); 
+    padding: var(--console-padding); 
+    overflow-y: auto; 
+    z-index: 100;
+}
+
+.ascii-art { 
+    white-space: pre; 
+    font-size: clamp(6px, 1.2vw, 13px); 
+    margin-bottom: 24px; 
+    font-weight: bold; 
+    color: var(--console-accent);
+    text-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+    line-height: 1.15;
+}
+
+.term-output { 
+    margin-bottom: 8px; 
+    line-height: 1.5; 
+    word-wrap: break-word;
+    animation: fadeInLine 0.15s ease-out;
+}
+
+.term-line { 
+    display: flex; 
+    align-items: center; 
+    margin-top: 12px; 
+}
+
+.term-prompt { 
+    margin-right: 12px; 
+    white-space: nowrap; 
+    color: var(--console-accent);
+    font-weight: 600;
+}
+
+.term-input {
+    background: transparent; 
+    border: none; 
+    color: #ffffff; 
+    width: 100%; 
+    outline: none;
+    caret-color: var(--console-accent);
+}
+
+@keyframes fadeInLine {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes proxyLoadPulse {
+    0% { width: 0%; }
+    40% { width: 60%; }
+    70% { width: 80%; }
+    100% { width: 100%; }
+}
+
+/* ==========================================================================
+   2. PROXY BROWSER (MOCK BRAVE BROWSER)
+   ========================================================================== */
+
+#screen-proxy { 
+    background: #000000; 
+    z-index: 50; 
+    flex-direction: column;
+}
+
+/* Browser Nav Toolbar */
+.browser-navbar {
+    background: #18181f;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.browser-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.browser-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cccccc;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.browser-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+.browser-address-bar {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 6px 16px;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.browser-address-input {
+    background: transparent;
+    border: none;
+    color: inherit;
+    width: 100%;
+    outline: none;
+    font-size: 13px;
+}
+
+#proxy-frame { 
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; 
+    height: 100%;
+    border: none; 
+    background: #ffffff;
+}
+
+/* Floating overlay hint in browser */
+.proxy-hud-badge {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: rgba(10, 10, 15, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    padding: 8px 16px;
+    font-size: 11px;
+    color: #a0a0b0;
+    pointer-events: auto;
+    z-index: 150;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: bounceBadge 2s infinite ease-in-out;
+    cursor: pointer;
+}
+
+.proxy-hud-badge kbd {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    padding: 2px 5px;
+    color: #fff;
+    font-weight: bold;
+}
+
+@keyframes bounceBadge {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+/* ==========================================================================
+   3. OVERLAY SLIDING TERMINAL
+   ========================================================================== */
+
+#overlay-terminal {
+    position: fixed; 
+    bottom: -40%; 
+    left: 0; 
+    width: 100%; 
+    height: 30%; 
+    background: rgba(var(--console-bg), 0.85); 
+    backdrop-filter: blur(var(--console-blur));
+    border-top: 1px solid var(--console-accent); 
+    z-index: 200; 
+    display: flex; 
+    flex-direction: column; 
+    padding: 16px;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
+    transition: bottom 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+#overlay-terminal.active { 
+    bottom: 0; 
+}
+#overlay-output { 
+    flex: 1; 
+    overflow-y: auto; 
+    margin-bottom: 8px; 
+}
+
+/* ==========================================================================
+   4. ADVANCED WEB IDE
+   ========================================================================== */
+
+#screen-ide { 
+    flex-direction: row; 
+    z-index: 10; 
+    background: var(--ide-bg); 
+    font-family: var(--ide-font);
+    font-size: var(--ide-font-size);
+}
+
+#sidebar {
+    width: var(--ide-sidebar-width); 
+    background: var(--ide-sidebar-bg); 
+    display: flex; 
+    flex-direction: column;
+    border-right: 1px solid var(--ide-border-color);
+    transition: width var(--transition-speed) var(--transition-curve);
+    overflow: hidden;
+}
+
+.sidebar-header { 
+    padding: 16px; 
+    font-weight: bold; 
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666675;
+    background: var(--ide-header-bg); 
+    border-bottom: 1px solid var(--ide-border-color);
+}
+
+#tabs-container { 
+    flex: 1; 
+    overflow-y: auto; 
+    padding: 12px; 
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Tab Elements with Individual Volume Controls */
+.tab {
+    background: var(--ide-panel-bg); 
+    padding: 10px 12px; 
+    border-radius: var(--ide-radius);
+    cursor: pointer; 
+    display: flex; 
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid var(--ide-border-color);
+    transition: all 0.2s ease;
+}
+
+.tab:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.tab.active { 
+    background: var(--ide-accent); 
+    border-color: var(--ide-accent);
+    color: #000000; 
+    font-weight: bold; 
+    box-shadow: 0 4px 12px rgba(255, 0, 127, 0.25);
+}
+
+.tab-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.tab-title-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    outline: none;
+    font-size: 12px;
+    flex: 1;
+    min-width: 0;
+    margin-right: 8px;
+}
+
+.tab-controls-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tab-close { 
+    background: transparent; 
+    border: none; 
+    color: inherit; 
+    cursor: pointer; 
+    opacity: 0.6;
+    padding: 2px;
+}
+.tab-close:hover { opacity: 1; }
+
+/* Custom Tab Volume Sliders */
+.tab-volume-slider-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    opacity: 0.75;
+    transition: opacity 0.2s;
+    background: rgba(0,0,0,0.15);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+.tab-volume-slider-wrapper:hover {
+    opacity: 1;
+}
+.tab-volume-icon {
+    font-size: 10px;
+    width: 12px;
+    text-align: center;
+}
+.tab-volume-slider {
+    flex: 1;
+    height: 3px;
+    -webkit-appearance: none;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+.tab.active .tab-volume-slider {
+    background: rgba(0, 0, 0, 0.25);
+}
+.tab-volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ide-accent);
+}
+.tab.active .tab-volume-slider::-webkit-slider-thumb {
+    background: #000000;
+}
+
+.btn-ghost {
+    width: 100%; 
+    padding: 12px; 
+    background: transparent; 
+    border: 1px dashed var(--ide-border-color);
+    color: var(--ide-text); 
+    border-radius: var(--ide-radius); 
+    cursor: pointer; 
+    transition: all 0.2s ease;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    user-select: none;
+    z-index: 1;
+    min-height: 42px;
+}
+.btn-ghost * {
+    pointer-events: none; /* Ensure clicks pass through child icons/text to the button */
+}
+.btn-ghost:hover { 
+    border-color: var(--ide-accent); 
+    color: var(--ide-accent); 
+    background: rgba(255, 255, 255, 0.02);
+}
+
+#workspace { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    gap: var(--ide-gap);
+    padding: var(--ide-gap);
+}
+
+#workspace header { 
+    background: var(--ide-header-bg); 
+    padding: 12px 16px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    border-radius: var(--ide-radius);
+    border: 1px solid var(--ide-border-color);
+}
+
+.toolbar { 
+    display: flex; 
+    gap: 10px; 
+}
+
+button.toolbar-btn {
+    background: var(--ide-panel-bg); 
+    color: var(--ide-text); 
+    border: 1px solid var(--ide-border-color);
+    padding: 8px 14px; 
+    border-radius: var(--ide-radius); 
+    cursor: pointer; 
+    font-size: 12px; 
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s var(--transition-curve);
+}
+button.toolbar-btn:hover { 
+    background: var(--ide-accent); 
+    border-color: var(--ide-accent);
+    color: #000000; 
+    box-shadow: 0 4px 12px rgba(var(--ide-accent), 0.2);
+}
+
+/* Grid Layouts support */
+#editor-grid { 
+    display: flex; 
+    flex: 1; 
+    overflow: hidden; 
+    gap: var(--ide-gap);
+}
+
+/* IDE Layout Configurations */
+#editor-grid.layout-standard {
+    flex-direction: row;
+}
+#editor-grid.layout-stacked {
+    flex-direction: column;
+}
+#editor-grid.layout-vsplit {
+    flex-direction: row;
+}
+#editor-grid.layout-3col {
+    flex-direction: row;
+}
+
+.panel { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    background: var(--ide-panel-bg); 
+    border-radius: var(--ide-radius);
+    border: 1px solid var(--ide-border-color);
+    overflow: hidden;
+}
+
+.panel-header { 
+    background: var(--ide-header-bg); 
+    padding: 8px 12px; 
+    font-size: 11px; 
+    font-weight: bold; 
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--ide-border-color); 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.CodeMirror { 
+    height: 100% !important; 
+    font-family: 'Fira Code', monospace; 
+    font-size: var(--ide-editor-size); 
+    background: transparent !important; 
+}
+
+.resizer { 
+    background: var(--ide-border-color); 
+    width: 6px; 
+    min-width: 6px;
+    cursor: col-resize; 
+    z-index: 5; 
+    transition: background 0.2s;
+    border-radius: 3px;
+    min-height: 30px;
+}
+.resizer:hover { 
+    background: var(--ide-accent); 
+}
+
+/* OUTPUT AREA - Holds multiple iframes */
+#output-area { 
+    flex: 1.2; 
+    display: flex; 
+    flex-direction: column; 
+    background: #ffffff; 
+    position: relative; 
+    border-radius: var(--ide-radius);
+    overflow: hidden;
+    border: 1px solid var(--ide-border-color);
+}
+.preview-iframe { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    border: none; 
+    background: #ffffff; 
+    display: none; 
+}
+.preview-iframe.active { 
+    display: block; 
+}
+
+/* ==========================================================================
+   5. SYSTEM PERFORMANCE HUD / DASHBOARD
+   ========================================================================== */
+
+#perf-hud {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    background: rgba(10, 10, 15, 0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-family: 'Fira Code', monospace;
+    color: #888899;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.perf-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.perf-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00ffcc;
+    box-shadow: 0 0 6px #00ffcc;
+}
+
+/* ==========================================================================
+   6. STYLE CENTER & SYSTEM MODALS (ADVANCED UI MAKER)
+   ========================================================================== */
+
+.overlay {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    display: none; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 999;
+    opacity: 0;
+    transition: opacity var(--transition-speed) var(--transition-curve);
+}
+.overlay.active { 
+    display: flex; 
+    opacity: 1;
+}
+
+.modal.glass-panel {
+    background: rgba(13, 13, 20, 0.85); 
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    padding: 24px; 
+    width: 600px;
+    max-height: 85vh;
+    border-radius: 12px;
+    box-shadow: var(--shadow-premium);
+    transform: scale(0.9);
+    transition: transform var(--transition-speed) var(--transition-curve);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.overlay.active .modal.glass-panel {
+    transform: scale(1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 12px;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    background: linear-gradient(90deg, #00ffcc, #ff007f);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Tab toggle buttons at the top of Style Center */
+.style-center-target-tabs {
+    display: flex;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.style-center-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #888899;
+    padding: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+    text-align: center;
+}
+
+.style-center-tab-btn.active {
+    background: rgba(255,255,255,0.08);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Color-coded hierarchy sections */
+.style-hierarchy-section {
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.style-hierarchy-header {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.style-hierarchy-header::after {
+    content: '\f107';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    transition: transform 0.2s;
+}
+
+.style-hierarchy-section.collapsed .style-hierarchy-header::after {
+    transform: rotate(-90deg);
+}
+
+.style-hierarchy-content {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: max-height 0.3s ease-out;
+    max-height: 500px;
+    overflow: hidden;
+}
+
+.style-hierarchy-section.collapsed .style-hierarchy-content {
+    max-height: 0;
+    padding: 0 14px;
+    border-bottom: none;
+}
+
+/* Hierarchy Color Codings */
+.style-hierarchy-section.cat-font { border-left: 3px solid #ff007f; }
+.style-hierarchy-section.cat-size { border-left: 3px solid #00ffcc; }
+.style-hierarchy-section.cat-corner { border-left: 3px solid #ffaa00; }
+.style-hierarchy-section.cat-colors { border-left: 3px solid #b800ff; }
+.style-hierarchy-section.cat-layout { border-left: 3px solid #00aaff; }
+
+.control-row { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    gap: 16px;
+}
+
+.control-row span {
+    font-size: 12px;
+    color: #a0a0b0;
+}
+
+.control-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-slider-val {
+    font-size: 11px;
+    font-family: 'Fira Code', monospace;
+    color: var(--console-accent);
+    width: 32px;
+    text-align: right;
+}
+
+input[type="checkbox"] { 
+    accent-color: #00ffcc; 
+    transform: scale(1.2); 
+    cursor: pointer;
+}
+
+input[type="color"] {
+    -webkit-appearance: none;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    background: transparent;
+}
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+input[type="color"]::-webkit-color-swatch {
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #00ffcc;
+    cursor: pointer;
+    border: 1px solid #000;
+}
+
+select, input[type="text"] {
+    background: rgba(0, 0, 0, 0.3); 
+    color: #ffffff; 
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px; 
+    padding: 6px 12px; 
+    outline: none;
+    transition: border-color 0.2s;
+}
+select:focus, input[type="text"]:focus {
+    border-color: #00ffcc;
+}
+
+/* Preset Themes Grid */
+.presets-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.preset-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e0e0e0;
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.preset-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #00ffcc;
+    transform: translateY(-1px);
+}
+
+/* Save / Load Configurations list */
+.saved-configs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 10px;
+    background: rgba(0,0,0,0.15);
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.config-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+.config-item-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.config-btn {
+    background: transparent;
+    border: none;
+    color: #a0a0b0;
+    cursor: pointer;
+    font-size: 10px;
+    transition: color 0.15s;
+}
+.config-btn:hover {
+    color: #fff;
+}
+.config-btn.delete:hover {
+    color: #ff3b30;
+}
+
+/* Save Preset Row */
+.save-preset-input-row {
+    display: flex;
+    gap: 8px;
+}
+.save-preset-input-row input {
+    flex: 1;
+}
+
+/* Custom Alert Banner */
+.sys-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50px);
+    background: rgba(10, 10, 15, 0.9);
+    border: 1px solid #00ffcc;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 12px;
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.sys-notification.active {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ==========================================================================
+   7. CUSTOM GLIDING SPOTLIGHT TOUR ENGINE
+   ========================================================================== */
+
+#tour-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 99999;
+    display: none;
+    pointer-events: auto;
+    transition: opacity 0.4s;
+    opacity: 0;
+}
+
+#tour-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* The transparent cutout box that glides smoothly */
+#tour-spotlight {
+    display: none;
+    position: absolute;
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75), 0 0 15px 2px var(--console-accent);
+    transition: top 0.45s cubic-bezier(0.25, 1, 0.5, 1),
+                left 0.45s cubic-bezier(0.25, 1, 0.5, 1),
+                width 0.45s cubic-bezier(0.25, 1, 0.5, 1),
+                height 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+    pointer-events: none;
+    z-index: 100000;
+}
+
+/* The tooltip popover box that points to the spotlight */
+#tour-tooltip {
+    position: fixed;
+    width: 300px;
+    background: rgba(12, 12, 20, 0.96);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--console-accent);
+    border-radius: 12px;
+    padding: 20px;
+    color: #fff;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 20px rgba(0, 255, 204, 0.08);
+    z-index: 100001;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-family: var(--console-font);
+    font-size: 12px;
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), top 0.4s cubic-bezier(0.25, 1, 0.5, 1), left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    transform: translateY(16px) scale(0.95);
+}
+
+#tour-tooltip.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.tour-tooltip-title {
+    font-weight: bold;
+    font-size: 13px;
+    color: var(--console-accent);
+}
+
+.tour-tooltip-text {
+    line-height: 1.4;
+    color: #d0d0d8;
+}
+
+.tour-tooltip-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.tour-tooltip-step {
+    font-size: 10px;
+    color: #666675;
+}
+
+.tour-tooltip-btns {
+    display: flex;
+    gap: 6px;
+}
+
+.tour-tooltip-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+}
+.tour-tooltip-btn.primary {
+    background: var(--console-accent);
+    color: #000;
+    border: none;
+    font-weight: bold;
+}
+.tour-tooltip-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+.tour-tooltip-btn.primary:hover {
+    background: #ffffff;
+}
+
+/* ==========================================================================
+   8. BUILDER INNER PAGES & MODAL SCALING
+   ========================================================================== */
+.builder-subtabs {
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+}
+.builder-subtabs::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome/Safari */
+}
+
+.subtab-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #888899;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.subtab-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.subtab-btn.active {
+    background: var(--console-accent);
+    color: #000000;
+    border-color: var(--console-accent);
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
+}
+
+/* Modal Scaling styles to adapt customizer to full screen size */
+.modal.scaled {
+    width: 95vw !important;
+    height: 95vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.modal.scaled #control-hub-body {
+    flex: 1 !important;
+    display: flex !important;
+    gap: 24px !important;
+    overflow: hidden !important;
+    padding: 20px !important;
+}
+
+.modal.scaled .hub-section {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: 100% !important;
+}
+
+.modal.scaled .builder-page {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 16px !important;
+    overflow-y: auto !important;
+    flex: 1 !important;
+}
+
+.modal.scaled .control-row {
+    margin: 0 !important;
+    padding: 12px !important;
+    background: rgba(0, 0, 0, 0.15) !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.03) !important;
+}
+
+.modal.scaled .presets-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+    gap: 12px !important;
+}
+
+/* Expanded Dynamic Sizing Variables map hook values */
+#workspace {
+    margin: var(--ide-margin, 0px) !important;
+}
+
+.panel {
+    border-style: var(--ide-border-style, solid) !important;
+    box-shadow: var(--ide-panel-glow, none) !important;
+}
+
+#screen-ide {
+    line-height: var(--ide-line-height, 1.4) !important;
+    letter-spacing: var(--ide-letter-spacing, 0px) !important;
+}
+
+/* Sidebar tab title max width restrict */
+.tab-title-text {
+    max-width: 60% !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
+}
+.tab-title-text[contenteditable="true"] {
+    cursor: text;
+    outline: 1px solid var(--ide-accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+    padding: 1px 4px;
+    max-width: none !important;
+}
+
+/* Make btn-ghost click block fill its bounds - override from base */
+.btn-ghost {
+    position: relative;
+    user-select: none;
+}
+
+/* Loading screen - ensure it covers everything */
+#screen-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #020205;
+    z-index: 15000;
+    overflow: hidden;
+}
+
+#loading-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+/* ==========================================================================\n   V4 QUALITY-OF-LIFE / MULTI-GAME WORKSPACE\n   ========================================================================== */
+
+#sidebar { min-width: 280px; }
+#sidebar .toolbar-btn,
+#workspace .toolbar-btn,
+#screen-games .toolbar-btn,
+#control-panel-modal button { pointer-events: auto !important; position: relative; z-index: 20; }
+
+#sidebar .toolbar-btn { width: 100%; justify-content: flex-start; }
+#sidebar input, #workspace textarea, #workspace input { user-select: text; }
+
+.active-tab-tools {
+    margin: 0 0 8px;
+    padding: 10px;
+    border: 1px solid var(--ide-border-color);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015));
+}
+.active-tab-tools-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--console-accent);
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+.active-tab-tools label {
+    display: block;
+    font-size: 9px;
+    color: #777789;
+    margin-top: 7px;
+}
+.active-tab-tools input {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 7px 8px;
+    border-radius: 7px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: #0a0a0f;
+    color: #fff;
+    outline: none;
+    user-select: text;
+}
+.active-tab-tools input:focus {
+    border-color: var(--console-accent);
+    box-shadow: 0 0 0 2px rgba(0,255,204,.08);
+}
+.active-tab-actions { display:flex; gap:6px; margin-top:8px; }
+.active-tab-actions .toolbar-btn { margin:0; flex:1; min-width:0; justify-content:center !important; }
+.active-tab-actions .danger { color:#ff6b81; }
+
+.tab-subtitle {
+    font-size: 9px;
+    color: rgba(255,255,255,.4);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tab.active .tab-subtitle { color: rgba(0,0,0,.55); }
+.tab-icon { font-size: 12px; }
+.tab-running-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #555;
+    box-shadow: none;
+}
+.tab-running-dot.on { background:#00ff88; box-shadow:0 0 8px rgba(0,255,136,.65); }
+
+#output-area {
+    min-width: 260px;
+    background: #07080c !important;
+    display:flex;
+    flex-direction:column;
+}
+.runner-toolbar {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 7px 10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:#090a10;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    z-index:30;
+}
+.runner-status { display:flex; align-items:center; gap:8px; font-size:10px; color:#aaa; min-width:0; }
+.runner-dot { width:7px; height:7px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px rgba(0,255,136,.7); }
+.runner-actions { display:flex; gap:5px; }
+.mini-btn, .mini-icon-btn {
+    border:1px solid rgba(255,255,255,.09);
+    background:rgba(255,255,255,.04);
+    color:#cfd0dc;
+    border-radius:6px;
+    cursor:pointer;
+    transition:.16s ease;
+}
+.mini-btn { padding:5px 8px; font-size:10px; }
+.mini-icon-btn { width:26px; height:24px; }
+.mini-btn:hover, .mini-icon-btn:hover { background:var(--ide-accent); color:#000; border-color:var(--ide-accent); }
+
+#game-runner-stack { position:relative; flex:1; min-height:0; overflow:hidden; background:#000; }
+.game-runner-card {
+    position:absolute;
+    inset:0;
+    background:#000;
+    opacity:0;
+    pointer-events:none;
+    visibility:hidden;
+    transition:opacity .18s ease;
+}
+.game-runner-card.active {
+    opacity:1;
+    pointer-events:auto;
+    visibility:visible;
+    z-index:4;
+}
+.game-runner-card:not(.active) { z-index:1; }
+.game-runner-card.paused::after {
+    content:'STOPPED';
+    position:absolute;
+    inset:0;
+    display:grid;
+    place-items:center;
+    color:#fff;
+    background:rgba(0,0,0,.58);
+    font:800 12px 'Fira Code',monospace;
+    letter-spacing:.18em;
+    pointer-events:none;
+}
+.game-runner-frame { width:100%; height:100%; border:0; background:#fff; display:block; }
+.runner-overlay {
+    position:absolute;
+    top:10px;
+    left:10px;
+    right:10px;
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    pointer-events:none;
+    opacity:0;
+    transition:.2s;
+    font:700 9px 'Fira Code',monospace;
+    color:#fff;
+}
+.game-runner-card:hover .runner-overlay { opacity:.75; }
+.runner-overlay span {
+    padding:4px 6px;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:999px;
+    background:rgba(0,0,0,.45);
+    backdrop-filter:blur(8px);
+}
+
+.game-studio-note {
+    margin-top:auto;
+    padding:9px;
+    border:1px solid rgba(0,255,204,.09);
+    border-radius:8px;
+    background:rgba(0,255,204,.025);
+    color:#6e8e88;
+    font-size:9px;
+    line-height:1.5;
+}
+
+.extra-js-panel { min-height:150px; }
+.extra-js-code {
+    width:100%;
+    flex:1;
+    resize:none;
+    min-height:110px;
+    padding:10px;
+    border:0;
+    outline:none;
+    background:#101116;
+    color:#e8e8f2;
+    font:12px/1.55 'Fira Code',monospace;
+    user-select:text;
+}
+
+#screen-ide .panel textarea { user-select:text; }
+#screen-ide .toolbar, #screen-games .toolbar, #screen-proxy .toolbar { position:relative; z-index:25; }
+
+#sys-notification.show { opacity:1; transform:translateY(0); pointer-events:auto; }
+.sys-notification[data-kind="error"] { border-color:rgba(255,70,90,.5); }
+.sys-notification[data-kind="warn"] { border-color:rgba(255,198,70,.5); }
+
+/* Prevent transparent screens / overlays from stealing pointer input. */
+.screen:not(.active) button,
+.screen:not(.active) input,
+.screen:not(.active) textarea { pointer-events:none !important; }
+
+/* Import inputs remain hidden while their visible buttons stay clickable. */
+input[type="file"][style*="display:none"] { pointer-events:none !important; }
+
+@media (max-width: 1100px) {
+    #sidebar { min-width:240px; width:240px !important; }
+    #editor-grid { flex-wrap:wrap; overflow:auto; }
+    #panel-html,#panel-css,#panel-js { min-height:220px; min-width:320px; }
+    #output-area { min-height:320px; min-width:100%; }
+}
+
+/* ============================================================================
+   V5 EDITOR RESIZING + SETTINGS + BOTTOM-RIGHT HUD
+   ============================================================================ */
+
+/* Performance HUD: bottom-right by default, user-configurable in Settings. */
+#perf-hud {
+    top: auto !important;
+    right: 14px !important;
+    bottom: 14px !important;
+    left: auto !important;
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+}
+#perf-hud.hud-bottom-right { right:14px !important; bottom:14px !important; left:auto !important; top:auto !important; }
+#perf-hud.hud-bottom-left { left:14px !important; bottom:14px !important; right:auto !important; top:auto !important; }
+#perf-hud.hud-top-right { right:14px !important; top:14px !important; left:auto !important; bottom:auto !important; }
+#perf-hud.hud-top-left { left:14px !important; top:14px !important; right:auto !important; bottom:auto !important; }
+
+/* The visible code areas are the editor. Remove the nested-looking browser textarea box. */
+#editor-grid {
+    align-items: stretch;
+    min-width: 0;
+    min-height: 0;
+}
+#panel-html, #panel-css, #panel-js {
+    position: relative;
+    min-width: 220px;
+    flex: 1 1 0;
+}
+#screen-ide .code-panel > textarea,
+#screen-ide #htmlCode,
+#screen-ide #cssCode,
+#screen-ide #jsCode {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    flex: 1 1 auto;
+    resize: none;
+    border: 0;
+    border-radius: 0;
+    outline: none;
+    padding: 12px 18px 12px 12px;
+    background: #101116;
+    color: #e9e9f4;
+    font: 13px/1.55 'Fira Code', monospace;
+    tab-size: 4;
+    white-space: pre;
+    overflow: auto;
+    box-shadow: none;
+}
+#screen-ide .code-panel > textarea:focus {
+    box-shadow: inset 0 0 0 1px rgba(0,255,204,.16);
+}
+.panel-resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 7px;
+    cursor: col-resize;
+    z-index: 50;
+    background: transparent;
+    transition: background .15s ease;
+}
+.panel-resizer:hover,
+.panel-resizer:active {
+    background: rgba(0,255,204,.35);
+}
+.panel-resizer::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 2px;
+    width: 2px;
+    height: 42px;
+    transform: translateY(-50%);
+    border-radius: 2px;
+    background: rgba(255,255,255,.18);
+}
+
+/* Keep extra JS runners full-size too. */
+.extra-js-panel { min-width: 220px; }
+.extra-js-panel .extra-js-code {
+    min-height: 140px;
+    width: 100%;
+    resize: none;
+    border-radius: 0;
+    margin: 0;
+    background: #101116;
+    color: #e9e9f4;
+    overflow: auto;
+    white-space: pre;
+}
+
+/* Settings control center. */
+#control-panel-modal {
+    padding: 20px;
+}
+.settings-modal {
+    width: min(1080px, 94vw) !important;
+    height: min(780px, 88vh);
+    max-height: 88vh !important;
+    padding: 0 !important;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.settings-modal .modal-header {
+    padding: 18px 20px;
+    margin: 0;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.02);
+}
+.settings-kicker {
+    color: #686978;
+    font: 700 9px/1.2 'Fira Code', monospace;
+    letter-spacing: .18em;
+    margin-bottom: 5px;
+}
+.settings-layout {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 190px minmax(0,1fr);
+}
+.settings-nav {
+    border-right: 1px solid rgba(255,255,255,.07);
+    background: #090a0f;
+    padding: 10px;
+    overflow-y: auto;
+}
+.settings-nav-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 10px;
+    margin-bottom: 5px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #8f90a2;
+    cursor: pointer;
+    text-align: left;
+    font: 600 11px 'Inter', sans-serif;
+}
+.settings-nav-btn:hover { background: rgba(255,255,255,.045); color:#fff; }
+.settings-nav-btn.active {
+    background: rgba(0,255,204,.09);
+    border-color: rgba(0,255,204,.18);
+    color: var(--console-accent);
+}
+.settings-pages { min-width:0; min-height:0; overflow:auto; padding: 18px; }
+.settings-page { display:none; min-height:100%; }
+.settings-page.active { display:block; }
+.settings-page-title {
+    font: 800 15px 'Inter', sans-serif;
+    color:#fff;
+    margin-bottom: 14px;
+}
+.settings-grid {
+    display:grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 10px;
+}
+.settings-grid.single-wide { grid-template-columns: 1fr; }
+.setting-card {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    min-height:68px;
+    padding: 12px;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:10px;
+    background:linear-gradient(180deg, rgba(255,255,255,.032), rgba(255,255,255,.012));
+    color:#ddd;
+}
+.setting-card > span { min-width:0; }
+.setting-card b { display:block; font:700 11px 'Inter',sans-serif; color:#f1f1f7; margin-bottom:3px; }
+.setting-card small { display:block; color:#6d6e7d; font:400 9px/1.45 'Inter',sans-serif; }
+.setting-card > input:not(.setting-toggle),
+.setting-card > select {
+    flex:0 0 44%;
+    min-width:120px;
+    max-width:280px;
+    background:#0b0c11;
+    color:#f1f1f5;
+    border:1px solid rgba(255,255,255,.09);
+    border-radius:7px;
+    padding:7px 8px;
+    outline:none;
+}
+.setting-card > input[type=color] { min-width:52px; max-width:62px; height:34px; padding:2px; }
+.setting-card > input[type=range] { accent-color: var(--console-accent); }
+.setting-toggle {
+    appearance: none;
+    flex:0 0 auto;
+    width: 40px;
+    height: 22px;
+    border-radius: 20px;
+    border:1px solid rgba(255,255,255,.12);
+    background:#2a2b34;
+    position:relative;
+    cursor:pointer;
+}
+.setting-toggle::after {
+    content:'';
+    position:absolute;
+    top:3px;
+    left:3px;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background:#aaa;
+    transition:.16s ease;
+}
+.setting-toggle:checked { background: rgba(0,255,204,.2); border-color: rgba(0,255,204,.45); }
+.setting-toggle:checked::after { left:21px; background:var(--console-accent); box-shadow:0 0 8px rgba(0,255,204,.4); }
+.settings-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+.settings-actions.vertical { flex-direction:column; }
+.settings-actions .toolbar-btn { width:auto; justify-content:center; }
+.settings-actions.vertical .toolbar-btn { width:100%; }
+.settings-actions .toolbar-btn.primary,
+.settings-footer .primary { background:var(--console-accent); color:#000; border-color:var(--console-accent); font-weight:800; }
+.settings-actions .toolbar-btn.danger { color:#ff6b81; }
+.shortcut-table { display:grid; gap:7px; }
+.shortcut-table > div {
+    display:flex;
+    align-items:center;
+    gap:5px;
+    min-height:42px;
+    padding:9px 11px;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:8px;
+    background:rgba(255,255,255,.02);
+    color:#90919f;
+    font-size:11px;
+}
+.shortcut-table span { margin-left:auto; color:#cfd0dc; }
+kbd {
+    padding:2px 6px;
+    border-radius:4px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.07);
+    color:#fff;
+    font:700 9px 'Fira Code',monospace;
+}
+.settings-footer {
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:11px 18px;
+    border-top:1px solid rgba(255,255,255,.08);
+    background:#090a0f;
+}
+#settings-save-status { color:#606171; font-size:10px; }
+
+/* Density and motion settings. */
+body.density-compact #workspace { --ide-gap: 5px; }
+body.density-compact #sidebar { padding: 7px !important; }
+body.density-compact #workspace header { padding: 8px 11px; }
+body.density-spacious #workspace { --ide-gap: 12px; }
+body.density-spacious #sidebar { padding: 16px !important; }
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration: .001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
+.no-blur *, .no-blur *::before, .no-blur *::after { backdrop-filter:none !important; }
+
+/* Prevent source/code iframes from generating the local-file navigation error. */
+#proxy-frame { background:#000; }
+
+@media (max-width: 1050px) {
+    .settings-layout { grid-template-columns: 160px minmax(0,1fr); }
+    .settings-grid { grid-template-columns:1fr; }
+}
+
+</style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/material-darker.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;800&family=Comic+Neue&family=Outfit:wght@400;600;800&family=Roboto:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Utilities -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+</head>
+
+<body>
+
+    <!-- SYSTEM PASSWORD GATEWAY OVERLAY -->
+    <div id="password-screen"
+        style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#060608; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:'Fira Code', monospace; color:#00ffcc;">
+        <div style="font-size:22px; font-weight:bold; margin-bottom:6px; letter-spacing:2px; color:#00ffcc;">CONSOLIUS
+            SYSTEM ACCESS</div>
+        <div style="font-size:12px; color:#666675; margin-bottom:20px;">AUTHENTICATION REQUIRED TO INITIALIZE OS</div>
+        <div style="display:flex; gap:8px; width:340px;">
+            <input type="password" id="sys-password-input" placeholder="Enter System Password..."
+                style="flex:1; background:rgba(255,255,255,0.05); border:1px solid #00ffcc; border-radius:6px; padding:10px 14px; color:#fff; font-family:'Fira Code', monospace; font-size:13px; outline:none;"
+                autofocus>
+            <button onclick="checkPassword()"
+                style="background:#00ffcc; color:#000; border:none; border-radius:6px; padding:0 18px; font-family:'Fira Code', monospace; font-weight:bold; cursor:pointer;">UNLOCK</button>
+        </div>
+        <div id="password-err" style="color:#ff0055; font-size:12px; margin-top:12px; display:none;"><i
+                class="fa-solid fa-triangle-exclamation"></i> Access Denied: Invalid Password</div>
+    </div>
+
+    <!-- System Performance HUD -->
+    <div id="perf-hud" class="perf-hud-bottom-right">
+        <div class="perf-item">
+            <div class="perf-dot"></div><span>CPU: <span id="perf-cpu">0.0%</span></span>
+        </div>
+        <div class="perf-item"><span>MEM: <span id="perf-mem">0.0 MB</span></span></div>
+        <div class="perf-item"><span>FPS: <span id="perf-fps">60</span></span></div>
+    </div>
+
+    <!-- System Notifications -->
+    <div id="sys-notification" class="sys-notification">
+        <i class="fa-solid fa-bell" style="color: var(--console-accent)"></i>
+        <span id="sys-notification-text">System notification</span>
+    </div>
+
+    <!-- 1. MAIN TERMINAL & BOOT SCREEN -->
+    <div id="screen-terminal" class="screen active">
+        <div id="boot-log-container"
+            style="display:none; font-family:var(--console-font); color:#888899; line-height:1.6; margin-bottom:20px;">
+        </div>
+        <div id="terminal-main-content">
+            <!-- RESTORED & CLEANED ASCII ART BANNER -->
+            <pre class="ascii-art"
+                style="color:#00ffcc; font-family:'Fira Code', monospace; font-size:12px; line-height:1.2; margin-bottom:18px; font-weight:bold;">
+   ____ ___  _   _  ____   ___  _     ___ _   _ ____  
+  / ___/ _ \| \ | |/ ___| / _ \| |   |_ _| | | / ___| 
+ | |  | | | |  \| |\___ \  | | | |    | || | | \___ \ 
+ | |__| |_| | |\  | ___) | |_| | |___ | || |_| |___) |
+  \____\___/|_| \_||____/ \___/|_____|___|\___/|____/ 
+            </pre>
+            <div id="terminal-welcome-text"
+                style="font-family:'Fira Code', monospace; font-size:13px; line-height:1.6; margin-bottom:16px;">
+                <div style="color:#00ffcc; font-weight:bold; margin-bottom:12px;">Welcome to CONSOLIUS OS v3.0</div>
+                <div style="color:#aaa;">Type 'help' for a list of commands, or 'tour' to start the guide.</div>
+                <div style="color:#aaa;">Type 'ui' to open the UI Builder Control Hub.</div>
+            </div>
+            <div id="main-term-output">
+                <!-- Welcome outputs inserted via script -->
+            </div>
+
+            <!-- FIXED PROMPT LAYOUT (MATCHES PHOTO 3) -->
+            <div class="term-line" id="term-input-row"
+                style="margin-top:16px; display:flex; align-items:center; gap:12px; width:100%;">
+                <span class="term-prompt" id="term-prompt-lbl"
+                    style="color:#00ffcc; font-family:'Fira Code', monospace; font-weight:bold; white-space:nowrap;">root@consolius:~$</span>
+                <input type="text" id="main-term-input" class="term-input" autocomplete="off" spellcheck="false"
+                    style="flex:1; background:transparent; border:1px solid #00ffcc; border-radius:8px; padding:8px 14px; color:#fff; font-family:'Fira Code', monospace; font-size:13px; outline:none;"
+                    autofocus>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. PROXY BROWSER -->
+    <div id="screen-proxy" class="screen">
+        <div class="browser-navbar">
+            <div class="browser-controls">
+                <button class="browser-btn" onclick="proxyBack()" title="Back"><i
+                        class="fa-solid fa-arrow-left"></i></button>
+                <button class="browser-btn" onclick="proxyForward()" title="Forward"><i
+                        class="fa-solid fa-arrow-right"></i></button>
+                <button class="browser-btn" onclick="proxyReload()" title="Reload" id="proxy-reload-btn"><i
+                        class="fa-solid fa-rotate-right"></i></button>
+                <button class="browser-btn" onclick="executeCommand('exit')" title="Exit to Terminal"><i
+                        class="fa-solid fa-house"></i></button>
+            </div>
+            <div class="browser-address-bar">
+                <i class="fa-solid fa-shield-halved" id="proxy-secure-icon"
+                    style="color: var(--console-accent); font-size: 12px;"></i>
+                <input type="text" id="proxy-address" class="browser-address-input" autocomplete="off"
+                    spellcheck="false" placeholder="Search or enter URL..."
+                    onkeydown="if(event.key==='Enter') proxyNavigate()">
+            </div>
+            <div class="toolbar">
+                <button class="toolbar-btn" onclick="proxyNavigate()"
+                    style="background:var(--console-accent); color:#000; font-weight:bold; border:none;"><i
+                        class="fa-solid fa-arrow-right"></i> Go</button>
+                <button class="toolbar-btn" onclick="openAboutBlank()"><i class="fa-solid fa-window-restore"></i>
+                    Blank</button>
+            </div>
+        </div>
+
+        <div id="proxy-loading-bar"
+            style="display:none; height:3px; background:linear-gradient(90deg, var(--console-accent), #ff007f); width:0%; transition:width 0.4s; position:relative; z-index:5;">
+        </div>
+
+        <div id="proxy-status-strip"
+            style="background:rgba(0,0,0,0.3); border-bottom:1px solid rgba(255,255,255,0.05); padding:4px 16px; font-size:10px; color:#666675; display:flex; align-items:center; gap:8px; font-family:'Fira Code', monospace;">
+            <i class="fa-solid fa-circle" id="proxy-status-dot" style="color:#00ff88; font-size:7px;"></i>
+            <span id="proxy-status-text">Consolius Proxy Engine Ready</span>
+            <span style="margin-left:auto;" id="proxy-engine-label">UV / XOR</span>
+        </div>
+
+        <div style="flex:1; position:relative; overflow:hidden;">
+            <div id="proxy-loading-splash"
+                style="position:absolute; top:0; left:0; width:100%; height:100%; background:var(--console-bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:10; font-family:'Fira Code', monospace;">
+                <div
+                    style="font-size:32px; color:var(--console-accent); animation:spin 1s linear infinite; display:inline-block;">
+                    <i class="fa-solid fa-circle-notch"></i>
+                </div>
+                <div style="font-size:14px; color:#aaa;" id="proxy-splash-text">Loading proxy engine...</div>
+                <div style="font-size:11px; color:#555;" id="proxy-splash-url"></div>
+            </div>
+
+            <div id="proxy-error-page"
+                style="position:absolute; top:0; left:0; width:100%; height:100%; background:var(--console-bg); display:none; flex-direction:column; align-items:center; justify-content:center; gap:20px; z-index:10; font-family:'Fira Code', monospace; text-align:center; padding:40px;">
+                <div style="font-size:48px; color:#ff3b30;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div style="font-size:20px; color:#e0e0e0; font-weight:bold;">Connection Blocked</div>
+                <div style="font-size:12px; color:#666675; max-width:480px; line-height:1.7;" id="proxy-error-msg">
+                    The site refused to load inside standard frame embedding. Enter a valid proxy gateway in Settings or
+                    launch directly.
+                </div>
+                <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+                    <button class="toolbar-btn" onclick="proxyReload()"><i class="fa-solid fa-rotate-right"></i>
+                        Retry</button>
+                    <button class="toolbar-btn" id="btn-open-settings-proxy"><i class="fa-solid fa-gear"></i>
+                        Settings</button>
+                    <button class="toolbar-btn" onclick="executeCommand('exit')"><i class="fa-solid fa-house"></i>
+                        Home</button>
+                </div>
+            </div>
+
+            <iframe id="proxy-frame" style="width:100%; height:100%; border:none; background:#fff; display:none;"
+                sandbox="allow-forms allow-scripts allow-popups allow-top-navigation"
+                referrerpolicy="no-referrer" ></iframe>
+        </div>
+
+        <div class="proxy-hud-badge" onclick="toggleOverlayTerminal()">
+            <i class="fa-solid fa-terminal"></i>
+            <span>Press <kbd>`</kbd> or <kbd>+</kbd> to open Command window</span>
+        </div>
+    </div>
+
+    <!-- 3. SLIDING OVERLAY TERMINAL -->
+    <div id="overlay-terminal">
+        <div id="overlay-output"></div>
+        <div class="term-line">
+            <span class="term-prompt">root@consolius:~$</span>
+            <input type="text" id="overlay-term-input" class="term-input" autocomplete="off" spellcheck="false">
+        </div>
+    </div>
+
+    <!-- 4. WEB IDE WITH FILE IMPORTERS & DYNAMIC JS SLOTS -->
+    <div id="screen-ide" class="screen">
+        <div id="sidebar"
+            style="width: 260px; background: rgba(0,0,0,0.4); border-right: 1px solid rgba(255,255,255,0.08); padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+            <div class="sidebar-header" style="font-size: 12px; font-weight: bold; color: var(--console-accent);"><i
+                    class="fa-solid fa-folder-tree"></i> Project Importer</div>
+
+            <!-- FILE IMPORTERS -->
+            <input type="file" id="ide-import-html" accept=".html,.htm" style="display:none;"
+                >
+            <input type="file" id="ide-import-css" accept=".css" style="display:none;" >
+            <input type="file" id="ide-import-js" accept=".js" multiple style="display:none;"
+                >
+
+            <button class="toolbar-btn" id="btn-import-html"><i
+                    class="fa-brands fa-html5" style="color:#e34f26"></i> Import HTML File</button>
+            <button class="toolbar-btn" id="btn-import-css"><i
+                    class="fa-brands fa-css3-alt" style="color:#264de4"></i> Import CSS File</button>
+            <button class="toolbar-btn" id="btn-import-js"><i
+                    class="fa-brands fa-square-js" style="color:#f7df1e"></i> Import JS File(s)</button>
+            <button class="toolbar-btn" id="btn-add-tab" style="border-style: dashed;"><i
+                    class="fa-solid fa-plus"></i> Add Game Tab</button>
+            <button class="toolbar-btn" id="btn-duplicate-tab"><i class="fa-solid fa-copy"></i> Duplicate Tab</button>
+            <button class="toolbar-btn" id="btn-add-js-slot"><i class="fa-solid fa-code"></i> Add JS Runner</button>
+
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 4px 0;">
+
+            <div class="sidebar-header" style="font-size: 11px; text-transform: uppercase; color: #888;"><i
+                    class="fa-solid fa-files"></i> Workspace Tabs</div>
+            <div id="active-tab-tools" class="active-tab-tools">
+                <div class="active-tab-tools-title"><i class="fa-solid fa-sliders"></i> Active Game</div>
+                <label>Tab name<input id="game-tab-name" type="text" maxlength="50" placeholder="My Game"></label>
+                <label>Tab icon URL<input id="game-tab-icon" type="text" placeholder="https://..."></label>
+                <div class="active-tab-actions">
+                    <button class="toolbar-btn" id="btn-rename-tab"><i class="fa-solid fa-pen"></i> Save Identity</button>
+                    <button class="toolbar-btn danger" id="btn-delete-tab"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+            <div id="tabs-container" style="flex:1; overflow-y:auto;">
+                <div id="tab-list" style="display:flex; flex-direction:column; gap:4px;">
+                    <!-- Code File Slots List -->
+                </div>
+            </div>
+        </div>
+
+        <div id="workspace">
+            <header>
+                <div class="toolbar">
+                    <button class="toolbar-btn" id="btn-exit-ide"><i class="fa-solid fa-terminal"></i>
+                        Exit IDE</button>
+                    <button class="toolbar-btn"
+                        style="background:var(--ide-accent, #00ffcc); color:#000; font-weight:bold; border:none;"
+                        id="btn-run-game"><i class="fa-solid fa-play"></i> Run Game</button>
+                    <button class="toolbar-btn" id="btn-save-tab"><i class="fa-solid fa-floppy-disk"></i> Save Game</button>
+                    <button class="toolbar-btn" style="background:rgba(255,255,255,0.08);"
+                        id="btn-open-cloaked"><i class="fa-solid fa-window-restore"></i> Open in Cloaked Tab</button>
+                </div>
+                <div class="toolbar">
+                    <button class="toolbar-btn" id="btn-fullscreen"><i class="fa-solid fa-expand"></i>
+                        Fullscreen</button>
+                    <button class="toolbar-btn" id="btn-export-zip"><i class="fa-solid fa-file-zipper"></i> Export
+                        ZIP</button>
+                    <button class="toolbar-btn" id="btn-style-center"><i class="fa-solid fa-palette"></i>
+                        Style Center</button>
+                    <button class="toolbar-btn" id="btn-open-settings-ide"><i class="fa-solid fa-gears"></i>
+                        Settings</button>
+                </div>
+            </header>
+
+            <div id="editor-grid" class="layout-standard">
+                <div class="panel code-panel" id="panel-html">
+                    <div class="panel-header" style="color:#e34f26"><span><i class="fa-brands fa-html5"></i>
+                            index.html</span></div>
+                    <textarea id="htmlCode" spellcheck="false" wrap="off"></textarea>
+                    <div class="panel-resizer" data-resize="panel-html" title="Drag to resize HTML panel"></div>
+                </div>
+                <div class="panel code-panel" id="panel-css">
+                    <div class="panel-header" style="color:#264de4"><span><i class="fa-brands fa-css3-alt"></i>
+                            style.css</span></div>
+                    <textarea id="cssCode" spellcheck="false" wrap="off"></textarea>
+                    <div class="panel-resizer" data-resize="panel-css" title="Drag to resize CSS panel"></div>
+                </div>
+                <div class="panel code-panel" id="panel-js">
+                    <div class="panel-header" style="color:#f7df1e"><span><i class="fa-brands fa-square-js"></i>
+                            main.js</span></div>
+                    <textarea id="jsCode" spellcheck="false" wrap="off"></textarea>
+                    <div class="panel-resizer" data-resize="panel-js" title="Drag to resize JavaScript panel"></div>
+                </div>
+                <div id="extra-js-container" style="display:flex; flex-direction:column; flex:1; gap:6px;"></div>
+                <div id="output-area"
+                    style="flex:1; min-height:200px; background:#fff; border-radius:6px; overflow:hidden;">
+                    <div id="runner-toolbar" class="runner-toolbar">
+                        <div class="runner-status"><span class="runner-dot"></span><span id="runner-status-text">Ready</span></div>
+                        <div class="runner-actions">
+                            <button class="mini-btn" id="btn-stop-game"><i class="fa-solid fa-stop"></i> Stop</button>
+                            <button class="mini-btn" id="btn-popout-game"><i class="fa-solid fa-up-right-from-square"></i> Pop Out</button>
+                            <button class="mini-btn" id="btn-refresh-game"><i class="fa-solid fa-rotate-right"></i></button>
+                        </div>
+                    </div>
+                    <div id="game-runner-stack"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. GAME & ROM STUDIO (UPDATED WITHOUT SCANLINES/MUTE BUTTONS & ADDED IMPORTER/CLOAKER) -->
+    <div id="screen-games" class="screen">
+        <div class="browser-navbar">
+            <div class="browser-controls">
+                <button class="browser-btn" id="btn-exit-games" title="Exit Game Studio"><i
+                        class="fa-solid fa-house"></i></button>
+            </div>
+            <div
+                style="font-family:'Fira Code', monospace; font-size:13px; color:var(--console-accent); font-weight:600; margin-left:12px;">
+                <i class="fa-solid fa-gamepad"></i> ROM & Arcade Studio
+            </div>
+        </div>
+        <div style="flex:1; display:flex; position:relative; overflow:hidden;">
+            <div
+                style="width:260px; background:rgba(0,0,0,0.4); border-right:1px solid rgba(255,255,255,0.08); padding:16px; display:flex; flex-direction:column; gap:12px; font-family:'Inter', sans-serif;">
+                <div style="font-size:11px; text-transform:uppercase; color:#888899; font-weight:bold;"><i
+                        class="fa-solid fa-file-arrow-up"></i> Game Importer</div>
+
+                <!-- ROM FILE INPUT -->
+                <input type="file" id="rom-file-input" accept=".html,.htm,.zip,.nes,.gba,.gb,.nds,.sfc"
+                    style="display:none;" >
+
+                <button class="toolbar-btn" id="btn-import-rom"
+                    style="background:var(--console-accent); color:#000; font-weight:bold; border:none;"><i
+                        class="fa-solid fa-file-import"></i> Import Game / ROM</button>
+                <button class="toolbar-btn" id="btn-rom-cloak"><i
+                        class="fa-solid fa-window-restore"></i> Open Game in About:Blank</button>
+
+                <div style="font-size:11px; color:#666675; line-height:1.5; margin-top:10px;">
+                    Supported files: <code>.html</code>, <code>.gba</code>, <code>.nes</code>, <code>.gb</code>,
+                    <code>.zip</code> web games.
+                </div>
+                <div class="game-studio-note"><i class="fa-solid fa-circle-info"></i> Each imported game keeps its own runner instance and volume.</div>
+            </div>
+            <div style="flex:1; position:relative; background:#000; display:flex; align-items:center; justify-content:center;"
+                id="game-container">
+                <iframe id="game-emulator-frame" style="width:100%; height:100%; border:none; background:#000;"
+                    sandbox="allow-scripts allow-popups allow-forms"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. CONSOLIUS CONTROL HUB & SETTINGS -->
+    <div class="overlay" id="control-panel-modal">
+        <div class="modal glass-panel settings-modal">
+            <div class="modal-header">
+                <div>
+                    <div class="settings-kicker">CONSOLIUS CONTROL CENTER</div>
+                    <h3 class="modal-title" id="control-hub-title"><i class="fa-solid fa-sliders"></i> Settings & System</h3>
+                </div>
+                <button class="browser-btn" id="btn-close-settings" title="Close settings"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="settings-layout">
+                <nav class="settings-nav" aria-label="Settings sections">
+                    <button class="settings-nav-btn active" data-settings-page="general"><i class="fa-solid fa-gear"></i> General</button>
+                    <button class="settings-nav-btn" data-settings-page="appearance"><i class="fa-solid fa-palette"></i> Appearance</button>
+                    <button class="settings-nav-btn" data-settings-page="ide"><i class="fa-solid fa-code"></i> IDE</button>
+                    <button class="settings-nav-btn" data-settings-page="runner"><i class="fa-solid fa-gamepad"></i> Game Runner</button>
+                    <button class="settings-nav-btn" data-settings-page="performance"><i class="fa-solid fa-gauge-high"></i> Performance</button>
+                    <button class="settings-nav-btn" data-settings-page="privacy"><i class="fa-solid fa-shield-halved"></i> Proxy & Privacy</button>
+                    <button class="settings-nav-btn" data-settings-page="shortcuts"><i class="fa-solid fa-keyboard"></i> Shortcuts</button>
+                    <button class="settings-nav-btn" data-settings-page="data"><i class="fa-solid fa-database"></i> Data</button>
+                </nav>
+                <div class="settings-pages">
+                    <section class="settings-page active" data-settings-page="general">
+                        <div class="settings-page-title">General</div>
+                        <div class="settings-grid">
+                            <label class="setting-card"><span><b>Browser tab title</b><small>Persists across CONSOLIUS launches and cloaked tabs.</small></span><input type="text" id="setting-tab-title" placeholder="Google Drive"></label>
+                            <label class="setting-card"><span><b>Browser tab icon URL</b><small>Use an image URL, data URL, or favicon.</small></span><input type="text" id="setting-tab-icon" placeholder="https://..."></label>
+                            <label class="setting-card"><span><b>Autosave</b><small>Save editor changes automatically.</small></span><input type="checkbox" class="setting-toggle" id="setting-autosave" checked></label>
+                            <label class="setting-card"><span><b>Confirm before closing games</b><small>Prevent accidental tab deletion.</small></span><input type="checkbox" class="setting-toggle" id="setting-confirm-close" checked></label>
+                            <label class="setting-card"><span><b>Startup screen</b><small>Choose where CONSOLIUS opens.</small></span><select id="setting-startup"><option value="terminal">Terminal</option><option value="ide">IDE</option><option value="games">Game Studio</option></select></label>
+                            <label class="setting-card"><span><b>Remember last screen</b><small>Restore your previous workspace view.</small></span><input type="checkbox" class="setting-toggle" id="setting-remember-screen" checked></label>
+                        </div>
+                    </section>
+
+                    <section class="settings-page" data-settings-page="appearance">
+                        <div class="settings-page-title">Appearance</div>
+                        <div class="settings-grid">
+                            <label class="setting-card"><span><b>Accent color</b><small>Controls the console and IDE highlights.</small></span><input type="color" id="setting-accent" value="#00ffcc"></label>
+                            <label class="setting-card"><span><b>IDE accent</b><small>Editor and button highlight color.</small></span><input type="color" id="setting-ide-accent" value="#ff007f"></label>
+                            <label class="setting-card"><span><b>UI density</b><small>Adjust spacing across panels.</small></span><select id="setting-density"><option value="comfortable">Comfortable</option><option value="compact">Compact</option><option value="spacious">Spacious</option></select></label>
+                            <label class="setting-card"><span><b>Reduce animations</b><small>Disable most UI motion.</small></span><input type="checkbox" class="setting-toggle" id="setting-reduce-motion"></label>
+                            <label class="setting-card"><span><b>Glass / blur effects</b><small>Disable expensive backdrop blur.</small></span><input type="checkbox" class="setting-toggle" id="setting-blur" checked></label>
+                            <label class="setting-card"><span><b>Editor font size</b><small>Code editor text size in pixels.</small></span><input type="number" id="setting-font-size" min="10" max="24" step="1" value="13"></label>
+                        </div>
+                    </section>
+
+                    <section class="settings-page" data-settings-page="ide">
+                        <div class="settings-page-title">IDE & Editor</div>
+                        <div class="settings-grid">
+                            <label class="setting-card"><span><b>Editor layout</b><small>Choose how code and output are arranged.</small></span><select id="setting-layout"><option value="standard">Editors + Runner</option><option value="stacked">Stacked Editors</option><option value="focus">Runner Focus</option></select></label>
+                            <label class="setting-card"><span><b>Word wrap</b><small>Wrap long lines instead of horizontal scrolling.</small></span><input type="checkbox" class="setting-toggle" id="setting-wrap"></label>
+                            <label class="setting-card"><span><b>Line numbers</b><small>Show line numbers beside editors.</small></span><input type="checkbox" class="setting-toggle" id="setting-line-numbers" checked></label>
+                            <label class="setting-card"><span><b>Auto-run after import</b><small>Immediately rebuild imported projects.</small></span><input type="checkbox" class="setting-toggle" id="setting-auto-run" checked></label>
+                            <label class="setting-card"><span><b>Keep multiple runners alive</b><small>Never unload background game iframes when switching tabs.</small></span><input type="checkbox" class="setting-toggle" id="setting-multi-run" checked></label>
+                            <label class="setting-card"><span><b>Minimum editor width</b><small>Prevents a code panel from collapsing away.</small></span><input type="number" id="setting-min-editor-width" min="180" max="480" step="10" value="220"></label>
+                        </div>
+                        <div class="settings-actions"><button class="toolbar-btn" id="btn-reset-editor-layout"><i class="fa-solid fa-arrows-left-right-to-line"></i> Reset editor widths</button><button class="toolbar-btn" id="btn-format-current"><i class="fa-solid fa-wand-magic-sparkles"></i> Basic format current code</button></div>
+                    </section>
+
+                    <section class="settings-page" data-settings-page="runner">
+                        <div class="settings-page-title">Game Runner</div>
+                        <div class="settings-grid">
+                            <label class="setting-card"><span><b>Default volume</b><small>Volume for newly created game tabs.</small></span><input type="range" id="setting-default-volume" min="0" max="1" step="0.01" value="1"></label>
+                            <label class="setting-card"><span><b>Runner background</b><small>Color behind transparent games.</small></span><input type="color" id="setting-runner-bg" value="#000000"></label>
+                            <label class="setting-card"><span><b>Allow popups</b><small>Permit game windows to open new tabs.</small></span><input type="checkbox" class="setting-toggle" id="setting-runner-popups" checked></label>
+                            <label class="setting-card"><span><b>Allow downloads</b><small>Permit downloaded assets inside game runners.</small></span><input type="checkbox" class="setting-toggle" id="setting-runner-downloads" checked></label>
+                            <label class="setting-card"><span><b>Pause hidden runners</b><small>Overlay hidden runners instead of destroying them.</small></span><input type="checkbox" class="setting-toggle" id="setting-pause-hidden"></label>
+                            <label class="setting-card"><span><b>Show runner overlay</b><small>Show game name/status on hover.</small></span><input type="checkbox" class="setting-toggle" id="setting-runner-overlay" checked></label>
+                        </div>
+                    </section>
+
+                    <section class="settings-page" data-settings-page="performance">
+                        <div class="settings-page-title">Performance</div>
+                        <div class="settings-grid">
+                            <label class="setting-card"><span><b>Performance HUD</b><small>Toggle CPU, memory and FPS display.</small></span><input type="checkbox" class="setting-toggle" id="setting-hud" checked></label>
+                            <label class="setting-card"><span><b>HUD position</b><small>The HUD is now anchored bottom-right.</small></span><select id="setting-hud-position"><option value="bottom-right">Bottom right</option><option value="bottom-left">Bottom left</option><option value="top-right">Top right</option><option value="top-left">Top left</option></select></label>
+                            <label class="setting-card"><span><b>Update frequency</b><small>Lower frequency uses fewer resources.</small></span><select id="setting-hud-frequency"><option value="250">250 ms</option><option value="500">500 ms</option><option value="1000">1000 ms</option><option value="2000">2000 ms</option></select></label>
+                            <label class="setting-card"><span><b>Lazy-load inactive screens</b><small>Reduce hidden UI work.</small></span><input type="checkbox" class="setting-toggle" id="setting-lazy-screens" checked></label>
+                            <label class="setting-card"><span><b>Show notifications</b><small>Enable system toast messages.</small></span><input type="checkbox" class="setting-toggle" id="setting-notifications" checked></label>
+                            <label class="setting-card"><span><b>Debug logging</b><small>Write CONSOLIUS events to DevTools.</small></span><input type="checkbox" class="setting-toggle" id="setting-debug"></label>
+                        </div>
+                    </section>
+
+                    <section class="settings-page" data-settings-page="privacy">
+                        <div class="settings-page-title">Proxy & Privacy</div>
+                        <div class="settings-grid single-wide">
+                            <label class="setting-card"><span><b>Web Proxy Gateway Prefix</b><small>Used for URL-based proxy navigation.</small></span><input type="text" id="setting-proxy-prefix" placeholder="https://..."></label>
+                            <label class="setting-card"><span><b>Panic Escape Key</b><small>Ctrl + this key immediately opens your escape destination.</small></span><input type="text" id="setting-panic" maxlength="1" placeholder="Q"></label>
+                            <label class="setting-card"><span><b>Block local file proxy navigation</b><small>Prevents accidental file:/// frames and removes the unsafe-local-file console error.</small></span><input type="checkbox" class="setting-toggle" id="setting-block-file-proxy" checked></label>
+                        </div>
+                    </section>
+
+                    <section class="settings-page" data-settings-page="shortcuts">
+                        <div class="settings-page-title">Keyboard Shortcuts</div>
+                        <div class="shortcut-table">
+                            <div><kbd>Ctrl</kbd> + <kbd>S</kbd><span>Save current game</span></div>
+                            <div><kbd>Ctrl</kbd> + <kbd>N</kbd><span>Create a new game tab</span></div>
+                            <div><kbd>Alt</kbd> + <kbd>←</kbd>/<kbd>→</kbd><span>Switch game tabs</span></div>
+                            <div><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd><span>Fullscreen</span></div>
+                            <div><kbd>`</kbd> or <kbd>+</kbd><span>Toggle command overlay</span></div>
+                            <div><kbd>Escape</kbd><span>Close dialogs/overlays</span></div>
+                        </div>
+                    </section>
+
+                    <section class="settings-page" data-settings-page="data">
+                        <div class="settings-page-title">Workspace Data</div>
+                        <div class="settings-actions vertical">
+                            <button class="toolbar-btn" id="btn-export-workspace"><i class="fa-solid fa-download"></i> Export workspace JSON</button>
+                            <button class="toolbar-btn" id="btn-import-workspace"><i class="fa-solid fa-upload"></i> Import workspace JSON</button>
+                            <button class="toolbar-btn" id="btn-reset-workspace"><i class="fa-solid fa-rotate-left"></i> Reset workspace to defaults</button>
+                            <button class="toolbar-btn danger" id="btn-clear-settings"><i class="fa-solid fa-trash"></i> Reset CONSOLIUS settings</button>
+                            <input type="file" id="workspace-import-file" accept="application/json,.json" style="display:none">
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <div class="settings-footer">
+                <span id="settings-save-status">Changes apply automatically.</span>
+                <div class="settings-actions"><button class="toolbar-btn" id="btn-close-settings-footer">Close</button><button class="toolbar-btn primary" id="btn-save-settings"><i class="fa-solid fa-check"></i> Apply & Save</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SPOTLIGHT TOUR & LOADING OVERLAYS -->
+    <div id="tour-overlay"></div>
+    <div id="tour-spotlight"></div>
+    <div id="tour-tooltip">
+        <div class="tour-tooltip-title" id="tour-title">Title</div>
+        <div class="tour-tooltip-text" id="tour-text">Description</div>
+        <div class="tour-tooltip-footer">
+            <div class="tour-tooltip-step" id="tour-step">1 / 5</div>
+            <div class="tour-tooltip-btns">
+                <button class="tour-tooltip-btn" id="tour-btn-skip" onclick="tourSkip()">Skip</button>
+                <button class="tour-tooltip-btn primary" id="tour-btn-next" onclick="tourNext()">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+/* ==========================================================================
+   CONSOLIUS V5 - persistent multi-game workspace, settings, and runner engine
+   ========================================================================== */
+
+(() => {
+    'use strict';
+
+    const STORAGE_KEY = 'consolius_workspace_v5';
+    const IDENTITY_KEY = 'consolius_tab_identity_v5';
+    const SETTINGS_KEY = 'consolius_settings_v5';
+    const DEFAULT_SETTINGS = {
+        autosave: true, confirmClose: true, startup: 'terminal', rememberScreen: true,
+        accent: '#00ffcc', ideAccent: '#ff007f', density: 'comfortable', reduceMotion: false, blur: true, fontSize: 13,
+        layout: 'standard', wrap: false, lineNumbers: true, autoRun: true, multiRun: true, minEditorWidth: 220,
+        defaultVolume: 1, runnerBg: '#000000', runnerPopups: true, runnerDownloads: true, pauseHidden: false, runnerOverlay: true,
+        hud: true, hudPosition: 'bottom-right', hudFrequency: 500, lazyScreens: true, notifications: true, debug: false,
+        blockFileProxy: true, lazyScreens: true
+    };
+    let appSettings = loadJsonSetting(SETTINGS_KEY, DEFAULT_SETTINGS);
+
+    function loadJsonSetting(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            const parsed = raw ? JSON.parse(raw) : null;
+            return { ...fallback, ...(parsed || {}) };
+        } catch (_) { return { ...fallback }; }
+    }
+
+    function saveAppSettings() {
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(appSettings)); } catch (_) {}
+    }
+
+    const defaultIdentity = {
+        title: localStorage.getItem('consolius_tab_title') || 'Google Drive',
+        icon: localStorage.getItem('consolius_tab_icon') || 'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png'
+    };
+
+    window.sysSettings = {
+        tabTitle: defaultIdentity.title,
+        tabIcon: defaultIdentity.icon,
+        proxyPrefix: localStorage.getItem('consolius_proxy_prefix') || 'https://splash.best/service/',
+        panicKey: localStorage.getItem('consolius_panic_key') || 'q'
+    };
+
+    let tabs = [];
+    let activeTabId = null;
+    let currentRomUrl = null;
+    let extraJsEditors = [];
+
+    const $ = id => document.getElementById(id);
+    const uid = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    function escapeHtml(value = '') {
+        return String(value).replace(/[&<>"']/g, c => ({
+            '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+        }[c]));
+    }
+
+    function notify(message, kind = 'info') {
+        if (appSettings.notifications === false) return;
+        const el = $('sys-notification');
+        const text = $('sys-notification-text');
+        if (!el || !text) return;
+        text.textContent = message;
+        el.dataset.kind = kind;
+        el.classList.add('show');
+        clearTimeout(notify.timer);
+        notify.timer = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function saveWorkspace() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ tabs, activeTabId }));
+        } catch (error) {
+            console.warn('Could not save workspace:', error);
+        }
+    }
+
+    function loadWorkspace() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (Array.isArray(data.tabs) && data.tabs.length) {
+                    tabs = data.tabs.map(normalizeTab);
+                    activeTabId = tabs.some(t => t.id === data.activeTabId) ? data.activeTabId : tabs[0].id;
+                    return;
+                }
+            }
+        } catch (error) {
+            console.warn('Workspace restore failed:', error);
+        }
+
+        tabs = [createTab('New Game', true)];
+        activeTabId = tabs[0].id;
+        saveWorkspace();
+    }
+
+    function normalizeTab(tab) {
+        return {
+            id: tab.id || uid('tab'),
+            name: tab.name || 'Untitled Game',
+            icon: tab.icon || '🎮',
+            html: tab.html || '<main style="font-family:system-ui;padding:40px"><h1>Hello, CONSOLIUS</h1><p>Start building your game here.</p></main>',
+            css: tab.css || 'body{margin:0;background:#101116;color:#fff}',
+            js: tab.js || '',
+            extras: Array.isArray(tab.extras) ? tab.extras : [],
+            volume: Number.isFinite(Number(tab.volume)) ? Number(tab.volume) : Number(appSettings.defaultVolume ?? 1),
+            running: tab.running !== false,
+            lastSaved: tab.lastSaved || Date.now(),
+            sourceType: tab.sourceType || 'workspace'
+        };
+    }
+
+    function createTab(name = 'New Game', blank = false) {
+        return normalizeTab({
+            id: uid('tab'),
+            name,
+            icon: '🎮',
+            html: blank ? '<div id="game"><h1>New Game</h1><p>Edit the HTML panel to begin.</p></div>' : '',
+            css: blank ? 'body{margin:0;background:#111;color:#eee;font-family:system-ui}' : '',
+            js: '',
+            extras: [],
+            volume: Number(appSettings.defaultVolume ?? 1),
+            running: true,
+            lastSaved: Date.now(),
+            sourceType: 'workspace'
+        });
+    }
+
+    function getActiveTab() {
+        return tabs.find(tab => tab.id === activeTabId) || tabs[0];
+    }
+
+    function splitHtmlSource(source = '') {
+        const text = String(source || '');
+        if (!/<(?:!doctype|html|head|body)\b/i.test(text)) return { body: text, css: '', js: '', externalScripts: [] };
+        try {
+            const doc = new DOMParser().parseFromString(text, 'text/html');
+            const styles = Array.from(doc.querySelectorAll('style')).map(el => el.textContent || '').join('\n');
+            const inlineScripts = [];
+            const externalScripts = [];
+            Array.from(doc.querySelectorAll('script')).forEach(el => {
+                const src = el.getAttribute('src');
+                if (src) externalScripts.push(src);
+                else if (el.textContent) inlineScripts.push(el.textContent);
+            });
+            const body = doc.body ? doc.body.innerHTML : text;
+            return { body, css: styles, js: inlineScripts.join('\n'), externalScripts };
+        } catch (_) {
+            return { body: text, css: '', js: '', externalScripts: [] };
+        }
+    }
+
+    function safeScriptText(code = '') {
+        return String(code).replace(/<\/script/gi, '<\\/script');
+    }
+
+    function buildGameDocument(tab, volume = tab.volume) {
+        const source = splitHtmlSource(tab.html || '');
+        const combinedCss = [source.css || '', tab.css || ''].filter(Boolean).join('\n');
+        const combinedJs = [source.js || '', tab.js || ''].filter(Boolean).join('\n');
+        const extraScripts = (tab.extras || []).map(x => `<script>\n${safeScriptText(x.content || '')}\n<\/script>`).join('\n');
+        const externalScripts = (source.externalScripts || []).map(src => `<script src="${escapeHtml(src)}"><\/script>`).join('\n');
+        const safeVolume = Math.max(0, Math.min(1, Number(volume) || 0));
+        const bg = appSettings.runnerBg || '#000000';
+        const volumePatch = `<script>\n(() => {\n  let MASTER_VOLUME=${safeVolume};\n  const apply=()=>document.querySelectorAll('audio,video').forEach(m=>{try{m.volume=MASTER_VOLUME;}catch(_){}});\n  window.CONSOLIUS_SET_VOLUME=v=>{MASTER_VOLUME=Math.max(0,Math.min(1,Number(v)||0));apply();};\n  window.CONSOLIUS_GET_VOLUME=()=>MASTER_VOLUME;\n  new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true});\n  addEventListener('DOMContentLoaded',apply,{once:true});\n})();\n<\/script>`;
+        return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;min-height:100%;background:${bg};}body{overflow:auto;}\n${combinedCss}</style></head><body>${source.body || ''}${externalScripts}<script>\n${safeScriptText(combinedJs)}\n<\/script>${extraScripts}${volumePatch}</body></html>`;
+    }
+
+    function syncEditorsFromTab() {
+        const tab = getActiveTab();
+        if (!tab) return;
+        const html = $('htmlCode'), css = $('cssCode'), js = $('jsCode');
+        if (html) html.value = tab.html;
+        if (css) css.value = tab.css;
+        if (js) js.value = tab.js;
+        renderExtraEditors(tab.extras);
+        const name = $('game-tab-name'), icon = $('game-tab-icon');
+        if (name) name.value = tab.name;
+        if (icon) icon.value = tab.icon;
+        updateRunnerToolbar();
+        renderTabList();
+        showRunner(activeTabId);
+    }
+
+    function syncActiveTabFromEditors() {
+        const tab = getActiveTab();
+        if (!tab) return;
+        tab.html = $('htmlCode')?.value || '';
+        tab.css = $('cssCode')?.value || '';
+        tab.js = $('jsCode')?.value || '';
+        tab.extras = Array.from(document.querySelectorAll('.extra-js-code')).map((ta, index) => ({
+            name: ta.dataset.name || `script_${index + 2}.js`,
+            content: ta.value
+        }));
+        tab.lastSaved = Date.now();
+        saveWorkspace();
+    }
+
+    function renderTabList() {
+        const list = $('tab-list');
+        if (!list) return;
+        list.innerHTML = '';
+        tabs.forEach((tab, index) => {
+            const item = document.createElement('div');
+            item.className = 'tab' + (tab.id === activeTabId ? ' active' : '');
+            item.dataset.tabId = tab.id;
+            item.innerHTML = `
+                <div class="tab-header-row">
+                    <div class="tab-title-text"><span class="tab-icon">${escapeHtml(tab.icon)}</span> ${escapeHtml(tab.name || `Game ${index+1}`)}</div>
+                    <div class="tab-controls-right">
+                        <span class="tab-running-dot ${tab.running ? 'on' : ''}" title="${tab.running ? 'Running' : 'Stopped'}"></span>
+                        <button class="tab-close" data-action="close" title="Close tab"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+                <div class="tab-subtitle">${tab.sourceType === 'rom' ? 'ROM import' : 'HTML / CSS / JS'} · ${tab.running ? 'playing' : 'paused'}</div>
+                <div class="tab-volume-slider-wrapper" data-role="volume">
+                    <i class="fa-solid ${tab.volume <= 0 ? 'fa-volume-xmark' : 'fa-volume-low'} tab-volume-icon"></i>
+                    <input class="tab-volume-slider" type="range" min="0" max="1" step="0.01" value="${tab.volume}" aria-label="Volume">
+                    <span class="tab-volume-value">${Math.round(tab.volume * 100)}%</span>
+                </div>`;
+
+            item.addEventListener('click', event => {
+                if (event.target.closest('.tab-close') || event.target.closest('.tab-volume-slider-wrapper')) return;
+                switchToTab(tab.id);
+            });
+            item.querySelector('[data-action="close"]').addEventListener('click', event => {
+                event.stopPropagation();
+                deleteTab(tab.id);
+            });
+            item.querySelector('.tab-volume-slider').addEventListener('input', event => {
+                setTabVolume(tab.id, Number(event.target.value));
+            });
+            list.appendChild(item);
+        });
+    }
+
+    function createRunnerCard(tab) {
+        const card = document.createElement('div');
+        card.className = `game-runner-card ${tab.id === activeTabId ? 'active' : ''}`;
+        card.dataset.runnerId = tab.id;
+        const iframe = document.createElement('iframe');
+        iframe.className = 'game-runner-frame';
+        iframe.allow = 'autoplay; fullscreen; gamepad';
+        iframe.setAttribute('title', tab.name);
+        iframe.setAttribute('sandbox', `allow-scripts allow-forms allow-pointer-lock ${appSettings.runnerPopups ? 'allow-popups' : ''} ${appSettings.runnerDownloads ? 'allow-downloads' : ''}`.trim());
+        iframe.srcdoc = buildGameDocument(tab, tab.volume);
+        card.appendChild(iframe);
+        const overlay = document.createElement('div');
+        overlay.className = 'runner-overlay';
+        overlay.innerHTML = `<span><i class="fa-solid fa-gamepad"></i> ${escapeHtml(tab.name)}</span><span>${tab.running ? 'LIVE' : 'STOPPED'}</span>`;
+        card.appendChild(overlay);
+        iframe.addEventListener('load', () => applyRunnerVolume(tab.id));
+        return card;
+    }
+
+    function renderRunnerStack() {
+        const stack = $('game-runner-stack');
+        if (!stack) return;
+        const existing = new Map(Array.from(stack.querySelectorAll('.game-runner-card')).map(card => [card.dataset.runnerId, card]));
+        tabs.forEach(tab => {
+            let card = existing.get(tab.id);
+            if (!card) { card = createRunnerCard(tab); stack.appendChild(card); }
+            existing.delete(tab.id);
+            card.querySelector('.runner-overlay span:last-child').textContent = tab.running ? 'LIVE' : 'STOPPED';
+            card.querySelector('.runner-overlay span:first-child').innerHTML = `<i class="fa-solid fa-gamepad"></i> ${escapeHtml(tab.name)}`;
+            card.querySelector('iframe')?.setAttribute('title', tab.name);
+        });
+        existing.forEach(card => card.remove());
+        showRunner(activeTabId);
+        updateRunnerToolbar();
+    }
+
+    function showRunner(id) {
+        document.querySelectorAll('.game-runner-card').forEach(card => {
+            const active = card.dataset.runnerId === id;
+            card.classList.toggle('active', active);
+            if (active) {
+                const tab = tabs.find(t=>t.id===id);
+                card.classList.toggle('paused', !tab?.running);
+            }
+        });
+    }
+
+    function refreshRunnerDocument(id) {
+        const tab=tabs.find(t=>t.id===id); if(!tab) return;
+        const card=document.querySelector(`.game-runner-card[data-runner-id="${CSS.escape(id)}"]`);
+        const frame=card?.querySelector('iframe'); if(frame) frame.srcdoc=buildGameDocument(tab,tab.volume);
+    }
+
+    function switchToTab(id) {
+        syncActiveTabFromEditors();
+        if (!tabs.some(tab => tab.id === id)) return;
+        activeTabId = id;
+        saveWorkspace();
+        syncEditorsFromTab();
+        if (appSettings.pauseHidden) tabs.filter(t => t.id !== activeTabId).forEach(t => toggleTabRunning(t.id, false));
+        notify(`Switched to ${getActiveTab().name}`);
+    }
+
+    function addGameTab(source = null) {
+        syncActiveTabFromEditors();
+        const tab = source ? normalizeTab({ ...source, id: uid('tab'), name: `${source.name} Copy`, lastSaved: Date.now() }) : createTab(`Game ${tabs.length + 1}`, true);
+        tabs.push(tab);
+        activeTabId = tab.id;
+        saveWorkspace();
+        syncEditorsFromTab();
+        renderRunnerStack();
+        notify('New game tab created');
+    }
+
+    function deleteTab(id) {
+        if (tabs.length <= 1) {
+            notify('Keep at least one game tab open.', 'warn');
+            return;
+        }
+        const closing = tabs.find(tab => tab.id === id);
+        if (appSettings.confirmClose && closing && !window.confirm(`Close '${closing.name}'?`)) return;
+        tabs = tabs.filter(tab => tab.id !== id);
+        if (activeTabId === id) activeTabId = tabs[Math.max(0, tabs.length - 1)].id;
+        saveWorkspace();
+        syncEditorsFromTab();
+        renderRunnerStack();
+        notify(`Closed ${closing?.name || 'game tab'}`);
+    }
+
+    function setTabVolume(id, value) {
+        const tab = tabs.find(t => t.id === id);
+        if (!tab) return;
+        tab.volume = Math.max(0, Math.min(1, value));
+        saveWorkspace();
+        applyRunnerVolume(id);
+        const item = document.querySelector(`.tab[data-tab-id="${CSS.escape(id)}"]`);
+        if (item) {
+            item.querySelector('.tab-volume-slider').value = tab.volume;
+            item.querySelector('.tab-volume-value').textContent = `${Math.round(tab.volume * 100)}%`;
+            item.querySelector('.tab-volume-icon').className = `fa-solid ${tab.volume <= 0 ? 'fa-volume-xmark' : 'fa-volume-low'} tab-volume-icon`;
+        }
+    }
+
+    function applyRunnerVolume(id) {
+        const tab = tabs.find(t => t.id === id);
+        const card = document.querySelector(`.game-runner-card[data-runner-id="${CSS.escape(id)}"]`);
+        const frame = card?.querySelector('iframe');
+        if (!tab || !frame) return;
+        try {
+            frame.contentWindow.postMessage({ type:'CONSOLIUS_VOLUME', value:tab.volume }, '*');
+            const doc = frame.contentDocument;
+            if (doc) doc.querySelectorAll('audio,video').forEach(m => m.volume = tab.volume);
+        } catch (_) { /* cross-origin/opaque frames are intentionally ignored */ }
+    }
+
+    function toggleTabRunning(id, running) {
+        const tab = tabs.find(t => t.id === id);
+        if (!tab) return;
+        tab.running = running;
+        saveWorkspace();
+        renderTabList();
+        document.querySelectorAll(`.game-runner-card[data-runner-id="${CSS.escape(id)}"] .runner-overlay`).forEach(el => {
+            el.lastElementChild.textContent = running ? 'LIVE' : 'STOPPED';
+        });
+    }
+
+    function updateRunnerToolbar() {
+        const tab = getActiveTab();
+        const text = $('runner-status-text');
+        if (text) text.textContent = tab ? `${tab.name} · ${tab.running ? 'Running' : 'Stopped'}` : 'Ready';
+        const active = document.querySelector('.game-runner-card.active');
+        if (active) active.classList.toggle('paused', !tab?.running);
+    }
+
+    function renderExtraEditors(extras = []) {
+        const container = $('extra-js-container');
+        if (!container) return;
+        container.innerHTML = '';
+        extraJsEditors = [];
+        extras.forEach(extra => addJsSlot(extra.name, extra.content, false));
+    }
+
+    window.addJsSlot = function(fileName = null, content = '', save = true) {
+        const container = $('extra-js-container');
+        if (!container) return;
+        const slotId = uid('js-extra');
+        const name = fileName || `script_${container.children.length + 2}.js`;
+        const panel = document.createElement('div');
+        panel.className = 'panel extra-js-panel';
+        panel.id = slotId;
+        panel.innerHTML = `
+            <div class="panel-header" style="color:#f7df1e;">
+                <span><i class="fa-brands fa-square-js"></i> ${escapeHtml(name)}</span>
+                <button class="mini-icon-btn extra-js-remove" title="Remove script"><i class="fa-solid fa-trash"></i></button>
+            </div>
+            <textarea class="extra-js-code" data-name="${escapeHtml(name)}" spellcheck="false">${escapeHtml(content)}</textarea>`;
+        panel.querySelector('.extra-js-remove').addEventListener('click', () => {
+            panel.remove();
+            syncActiveTabFromEditors();
+        });
+        container.appendChild(panel);
+        extraJsEditors.push(panel);
+        if (save) syncActiveTabFromEditors();
+    };
+
+    function importHtmlFile(input) {
+        const file = input?.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            $('htmlCode').value = e.target.result;
+            syncActiveTabFromEditors();
+            if (appSettings.autoRun) runCurrentTab();
+            notify(`Imported ${file.name}`);
+        };
+        reader.onerror = () => notify(`Could not read ${file.name}`, 'error');
+        reader.readAsText(file);
+        input.value = '';
+    }
+
+    function importCssFile(input) {
+        const file = input?.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            $('cssCode').value = e.target.result;
+            syncActiveTabFromEditors();
+            if (appSettings.autoRun) runCurrentTab();
+            notify(`Imported ${file.name}`);
+        };
+        reader.onerror = () => notify(`Could not read ${file.name}`, 'error');
+        reader.readAsText(file);
+        input.value = '';
+    }
+
+    function importJsFiles(input) {
+        const files = Array.from(input?.files || []);
+        if (!files.length) return;
+        $('jsCode').value = '';
+        extraJsEditors = [];
+        $('extra-js-container').innerHTML = '';
+        let remaining = files.length;
+        files.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                if (index === 0) $('jsCode').value = e.target.result;
+                else addJsSlot(file.name, e.target.result, false);
+                remaining--;
+                if (remaining === 0) {
+                    syncActiveTabFromEditors();
+                    if (appSettings.autoRun) runCurrentTab();
+                    notify(`${files.length} JavaScript file${files.length === 1 ? '' : 's'} imported`);
+                }
+            };
+            reader.onerror = () => remaining--;
+            reader.readAsText(file);
+        });
+        input.value = '';
+    }
+
+    function runCurrentTab() {
+        const tab = getActiveTab();
+        if (!tab) return;
+        syncActiveTabFromEditors();
+        tab.running = true;
+        saveWorkspace();
+        renderRunnerStack();
+        refreshRunnerDocument(tab.id);
+        showRunner(tab.id);
+        notify(`${tab.name} is running`);
+    }
+
+    function stopCurrentTab() {
+        const tab = getActiveTab();
+        if (!tab) return;
+        toggleTabRunning(tab.id, false);
+        notify(`${tab.name} stopped`);
+    }
+
+    function refreshCurrentTab() {
+        const tab = getActiveTab();
+        if (!tab) return;
+        syncActiveTabFromEditors();
+        renderRunnerStack();
+        refreshRunnerDocument(tab.id);
+        notify(`${tab.name} refreshed`);
+    }
+
+    function popoutCurrentGame() {
+        const tab = getActiveTab();
+        if (!tab) return;
+        openAboutBlank(buildGameDocument(tab, tab.volume), tab.name, tab.icon);
+    }
+
+    function checkPassword() {
+        const input = $('sys-password-input');
+        const err = $('password-err');
+        if (input && input.value === 'Abelthebest1') {
+            const screen=$('password-screen'); if(screen) screen.style.display='none';
+            input.value = '';
+            notify('System access granted');
+        } else if (err) {
+            err.style.display = 'block';
+            setTimeout(() => err.style.display = 'none', 1800);
+        }
+    }
+    window.checkPassword = checkPassword;
+
+    function executeCommand(cmd) {
+        const output = $('main-term-output');
+        if (!cmd) return;
+        if (output) {
+            const line = document.createElement('div');
+            line.style.cssText = "font-family:'Fira Code',monospace;font-size:13px;margin:4px 0;";
+            line.innerHTML = `<span style="color:#00ffcc;font-weight:bold;">root@consolius:~$</span> ${escapeHtml(cmd)}`;
+            output.appendChild(line);
+        }
+        const clean = cmd.toLowerCase().trim();
+        const arg = clean.split(/\s+/).slice(1).join(' ');
+        const commands = {
+            help(){ printOutput(`<div style="color:#00ffcc;font-weight:bold">CONSOLIUS COMMANDS</div><div>help — show commands</div><div>ide — open the multi-game IDE</div><div>games — open Game Studio</div><div>ui / settings — open Control Center</div><div>runner — open IDE runner</div><div>addtab — create a game tab</div><div>tabs — list game tabs</div><div>run / stop / refresh — control active game</div><div>save — save active game</div><div>duplicate — duplicate active game</div><div>export — export active game ZIP</div><div>hud on/off — toggle performance HUD</div><div>fullscreen — toggle fullscreen</div><div>theme neon/cyan/pink — quick accent presets</div><div>clear — clear terminal</div><div>reset — reset workspace</div><div>exit — return home</div>`); },
+            ide(){ switchScreen('screen-ide'); }, games(){ switchScreen('screen-games'); }, ui(){ openControlPanel('general'); }, settings(){ openControlPanel('general'); }, runner(){ switchScreen('screen-ide'); document.querySelector('#output-area')?.scrollIntoView?.({behavior:'smooth',block:'center'}); },
+            addtab(){ addGameTab(); }, tabs(){ printOutput(tabs.map((t,i)=>`<div><span style="color:#00ffcc">${i+1}.</span> ${escapeHtml(t.icon)} ${escapeHtml(t.name)} ${t.id===activeTabId?' <b>(active)</b>':''}</div>`).join('')); },
+            run(){ runCurrentTab(); }, stop(){ stopCurrentTab(); }, refresh(){ refreshCurrentTab(); }, save(){ syncActiveTabFromEditors(); saveIdentity(); notify('Game saved'); }, duplicate(){ addGameTab(getActiveTab()); }, export(){ exportToZip(); },
+            fullscreen(){ toggleFullscreen(); }, clear(){ if(output) output.innerHTML=''; }, reset(){ resetWorkspace(); },
+            hud(){ setAdvancedSetting('hud', arg !== 'off'); },
+            version(){ printOutput('<span style="color:#aaa">CONSOLIUS v5.0 — persistent multi-game workspace</span>'); },
+            aboutblank(){ openAboutBlank(); }, exit(){ switchScreen('screen-terminal'); }
+        };
+        if (clean.startsWith('theme ')) {
+            const colors={neon:'#00ffcc',cyan:'#00eaff',pink:'#ff007f',purple:'#a970ff',orange:'#ff9f43'};
+            const color=colors[arg]; if(color){ setAdvancedSetting('accent',color); setAdvancedSetting('ideAccent',color); notify(`Theme set to ${arg}`); } else notify('Themes: neon, cyan, pink, purple, orange','warn');
+            return;
+        }
+        if (clean === 'hud on' || clean === 'hud off') { setAdvancedSetting('hud', clean.endsWith('on')); return; }
+        if (commands[clean]) return commands[clean]();
+        if (/^https?:\/\//i.test(clean)) { switchScreen('screen-proxy'); if ($('proxy-address')) $('proxy-address').value = cmd; proxyNavigate(); return; }
+        if (clean.includes('.') && !clean.startsWith('file:')) { switchScreen('screen-proxy'); if ($('proxy-address')) $('proxy-address').value = cmd; proxyNavigate(); return; }
+        printOutput(`<span style="color:#ff0055;">Command not recognized: ${escapeHtml(cmd)}. Type 'help' for available commands.</span>`);
+    }
+    window.executeCommand = executeCommand;
+
+    function printOutput(html) {
+        const output = $('main-term-output');
+        if (!output) return;
+        const res = document.createElement('div');
+        res.style.cssText = 'margin:4px 0 12px 0;line-height:1.5';
+        res.innerHTML = html;
+        output.appendChild(res);
+    }
+
+    function switchScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const target = $(screenId);
+        if (target) target.classList.add('active');
+        if (screenId === 'screen-ide') syncEditorsFromTab();
+        try { localStorage.setItem('consolius_last_screen_v5', screenId); } catch (_) {}
+    }
+    window.switchScreen = switchScreen;
+
+    function proxyNavigate() {
+        const addr = $('proxy-address')?.value.trim();
+        if (!addr) return;
+        if (appSettings.blockFileProxy && /^file:/i.test(addr)) {
+            $('proxy-status-text').textContent = 'Local file navigation blocked for safety.';
+            $('proxy-error-page')?.style && ($('proxy-error-page').style.display = 'flex');
+            $('proxy-loading-splash')?.style && ($('proxy-loading-splash').style.display = 'none');
+            notify('Local file URLs are blocked in the proxy. Use Import Game / ROM instead.', 'warn');
+            return;
+        }
+        let targetUrl = addr;
+        if (!/^https?:\/\//i.test(targetUrl)) targetUrl = 'https://' + targetUrl;
+        const splash = $('proxy-loading-splash'), frame = $('proxy-frame'), errPage = $('proxy-error-page');
+        if (splash) splash.style.display='flex';
+        if (errPage) errPage.style.display='none';
+        if (frame) { frame.style.display='none'; frame.src='about:blank'; frame.src=(window.sysSettings.proxyPrefix||'') + encodeURIComponent(targetUrl); }
+        if ($('proxy-splash-url')) $('proxy-splash-url').textContent = targetUrl;
+    }
+    window.proxyNavigate = proxyNavigate;
+
+    function proxyFrameLoaded() {
+        $('proxy-loading-splash')?.style && ($('proxy-loading-splash').style.display = 'none');
+        $('proxy-frame')?.style && ($('proxy-frame').style.display = 'block');
+    }
+    function proxyFrameError() {
+        $('proxy-loading-splash')?.style && ($('proxy-loading-splash').style.display = 'none');
+        $('proxy-error-page')?.style && ($('proxy-error-page').style.display = 'flex');
+    }
+    window.proxyFrameLoaded = proxyFrameLoaded;
+    window.proxyFrameError = proxyFrameError;
+    window.proxyReload = () => { const frame = $('proxy-frame'); if (frame) frame.src = frame.src; };
+    window.proxyBack = () => { try { $('proxy-frame')?.contentWindow?.history.back(); } catch(_){} };
+    window.proxyForward = () => { try { $('proxy-frame')?.contentWindow?.history.forward(); } catch(_){} };
+
+    function toggleOverlayTerminal() { $('overlay-terminal')?.classList.toggle('active'); }
+    window.toggleOverlayTerminal = toggleOverlayTerminal;
+
+    function openAboutBlank(htmlContent = null, title = null, icon = null) {
+        const win = window.open('about:blank', '_blank');
+        if (!win) return notify('Popup blocked. Allow popups for CONSOLIUS.', 'warn');
+        const finalTitle = title || window.sysSettings.tabTitle || 'Google Drive';
+        const finalIcon = icon || window.sysSettings.tabIcon || '💻';
+        const body = htmlContent || `<div style="height:100vh;display:grid;place-items:center;background:#08090d;color:#00ffcc;font:14px/1.6 monospace;text-align:center"><div><h1>${escapeHtml(finalTitle)}</h1><p>CONSOLIUS cloaked window</p><small>The main system remains open in the original tab.</small></div></div>`;
+        win.document.open();
+        win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(finalTitle)}</title><link rel="icon" href="${escapeHtml(finalIcon)}"><style>html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000}</style></head><body>${body}</body></html>`);
+        win.document.close();
+        return win;
+    }
+    window.openAboutBlank = openAboutBlank;
+
+    window.openTabAboutBlank = popoutCurrentGame;
+
+    async function handleRomImport(input) {
+        const file = input?.files?.[0];
+        if (!file) return;
+        const isHtml = /\.html?$/i.test(file.name);
+        const isZip = /\.zip$/i.test(file.name);
+        if (isHtml) {
+            const text = await file.text();
+            const tab = createTab(file.name.replace(/\.html?$/i,''));
+            tab.sourceType = 'rom';
+            tab.html = text;
+            tab.css = '';
+            tab.js = '';
+            tabs.push(tab);
+            activeTabId = tab.id;
+            saveWorkspace();
+            switchScreen('screen-ide');
+            syncEditorsFromTab();
+            if (appSettings.autoRun) runCurrentTab();
+            notify(`${file.name} imported as a game`);
+        } else if (isZip && window.JSZip) {
+            try {
+                const zip = await JSZip.loadAsync(file);
+                const indexEntry = zip.file(/(^|\/)index\.html?$/i)[0];
+                if (!indexEntry) throw new Error('No index.html found in ZIP');
+                const html = await indexEntry.async('string');
+                const tab = createTab(file.name.replace(/\.zip$/i,''));
+                tab.sourceType = 'rom';
+                tab.html = html;
+                const cssFiles = zip.file(/\.css$/i);
+                if (cssFiles.length) tab.css = await cssFiles[0].async('string');
+                const jsFiles = zip.file(/\.js$/i);
+                if (jsFiles.length) tab.js = await jsFiles[0].async('string');
+                tabs.push(tab);
+                activeTabId = tab.id;
+                saveWorkspace();
+                switchScreen('screen-ide');
+                syncEditorsFromTab();
+                if (appSettings.autoRun) runCurrentTab();
+                notify(`${file.name} imported`);
+            } catch (error) {
+                notify(`ZIP import failed: ${error.message}`, 'error');
+            }
+        } else {
+            const dataUrl = await readAsDataURL(file);
+            const tab = createTab(file.name);
+            tab.sourceType = 'rom';
+            tab.html = `<div class="rom-notice"><h1>${escapeHtml(file.name)}</h1><p>This is a binary ROM file.</p><p>CONSOLIUS imported the ROM successfully, but no built-in emulator is bundled for this format yet.</p><p>File size: ${(file.size/1024/1024).toFixed(2)} MB</p></div>`;
+            tab.css = '.rom-notice{font-family:system-ui;padding:48px;line-height:1.6;color:#ddd;background:#101116;min-height:100vh}.rom-notice h1{color:#00ffcc}';
+            tab.js = `window.CONSOLIUS_ROM_DATA = ${JSON.stringify(dataUrl)};`;
+            tabs.push(tab);
+            activeTabId = tab.id;
+            currentRomUrl = dataUrl;
+            saveWorkspace();
+            switchScreen('screen-ide');
+            syncEditorsFromTab();
+            if (appSettings.autoRun) runCurrentTab();
+            notify(`${file.name} imported as binary ROM`);
+        }
+        input.value = '';
+    }
+    window.handleRomImport = input => { handleRomImport(input).catch(err => notify(err.message || 'ROM import failed', 'error')); };
+
+    function readAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result);
+            r.onerror = reject;
+            r.readAsDataURL(file);
+        });
+    }
+
+    function launchGameInAboutBlank() {
+        const tab = getActiveTab();
+        if (!tab) return notify('No game selected.', 'warn');
+        popoutCurrentGame();
+    }
+    window.launchGameInAboutBlank = launchGameInAboutBlank;
+
+    function exportToZip() {
+        if (!window.JSZip) return notify('JSZip is still loading.', 'warn');
+        syncActiveTabFromEditors();
+        const tab = getActiveTab();
+        const zip = new JSZip();
+        zip.file('index.html', tab.html || '');
+        zip.file('style.css', tab.css || '');
+        zip.file('main.js', tab.js || '');
+        (tab.extras || []).forEach((extra, index) => zip.file(`extra_${index+1}.js`, extra.content || ''));
+        const meta = { name:tab.name, icon:tab.icon, volume:tab.volume };
+        zip.file('consolius.json', JSON.stringify(meta, null, 2));
+        zip.generateAsync({type:'blob'}).then(blob => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${(tab.name || 'consolius_project').replace(/[^a-z0-9_-]+/gi,'_')}.zip`;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+            notify('Project exported');
+        });
+    }
+    window.exportToZip = exportToZip;
+
+    function saveIdentity() {
+        const tab = getActiveTab();
+        if (!tab) return;
+        const name = $('game-tab-name')?.value.trim();
+        const icon = $('game-tab-icon')?.value.trim();
+        if (name) tab.name = name;
+        if (icon) tab.icon = icon;
+        tab.lastSaved = Date.now();
+        saveWorkspace();
+        updateDocumentIdentity();
+        renderTabList();
+        renderRunnerStack();
+        notify(`Saved identity for ${tab.name}`);
+    }
+
+    function updateDocumentIdentity() {
+        document.title = window.sysSettings.tabTitle;
+        const link = $('app-favicon');
+        if (link) link.href = window.sysSettings.tabIcon;
+    }
+
+    function getSettingControlMap() {
+        return {
+            'tabTitle': 'setting-tab-title','tabIcon':'setting-tab-icon','proxyPrefix':'setting-proxy-prefix','panicKey':'setting-panic',
+            'autosave':'setting-autosave','confirmClose':'setting-confirm-close','startup':'setting-startup','rememberScreen':'setting-remember-screen',
+            'accent':'setting-accent','ideAccent':'setting-ide-accent','density':'setting-density','reduceMotion':'setting-reduce-motion','blur':'setting-blur','fontSize':'setting-font-size',
+            'layout':'setting-layout','wrap':'setting-wrap','lineNumbers':'setting-line-numbers','autoRun':'setting-auto-run','multiRun':'setting-multi-run','minEditorWidth':'setting-min-editor-width',
+            'defaultVolume':'setting-default-volume','runnerBg':'setting-runner-bg','runnerPopups':'setting-runner-popups','runnerDownloads':'setting-runner-downloads','pauseHidden':'setting-pause-hidden','runnerOverlay':'setting-runner-overlay',
+            'hud':'setting-hud','hudPosition':'setting-hud-position','hudFrequency':'setting-hud-frequency','lazyScreens':'setting-lazy-screens','notifications':'setting-notifications','debug':'setting-debug','blockFileProxy':'setting-block-file-proxy'
+        };
+    }
+
+    function readSettingsForm() {
+        const map=getSettingControlMap();
+        Object.entries(map).forEach(([key,id])=>{
+            const el=$(id); if(!el) return;
+            appSettings[key] = el.type === 'checkbox' ? el.checked : (el.type === 'number' || el.type === 'range' ? Number(el.value) : el.value);
+        });
+    }
+
+    function fillSettingsForm() {
+        Object.entries(getSettingControlMap()).forEach(([key,id])=>{
+            const el=$(id); if(!el || appSettings[key] === undefined) return;
+            if(el.type==='checkbox') el.checked=!!appSettings[key]; else el.value=appSettings[key];
+        });
+    }
+
+    function setAdvancedSetting(key,value) {
+        appSettings[key]=value;
+        saveAppSettings();
+        fillSettingsForm();
+        applyAdvancedSettings();
+    }
+
+    function applyAdvancedSettings() {
+        const root=document.documentElement;
+        root.style.setProperty('--console-accent', appSettings.accent || '#00ffcc');
+        root.style.setProperty('--ide-accent', appSettings.ideAccent || '#ff007f');
+        root.style.setProperty('--ide-editor-size', `${Math.max(10,Math.min(24,Number(appSettings.fontSize)||13))}px`);
+        root.dataset.density=appSettings.density || 'comfortable';
+        root.classList.toggle('reduce-motion', !!appSettings.reduceMotion);
+        root.classList.toggle('no-blur', !appSettings.blur);
+        document.body.classList.toggle('density-compact', appSettings.density==='compact');
+        document.body.classList.toggle('density-spacious', appSettings.density==='spacious');
+        const hud=$('perf-hud'); if(hud){ hud.style.display=appSettings.hud ? 'flex' : 'none'; hud.classList.remove('hud-top-right','hud-top-left','hud-bottom-left','hud-bottom-right'); hud.classList.add(`hud-${appSettings.hudPosition||'bottom-right'}`); }
+        const stack=$('game-runner-stack'); if(stack) stack.style.background=appSettings.runnerBg || '#000';
+        document.querySelectorAll('#htmlCode,#cssCode,#jsCode,.extra-js-code').forEach(el=>{el.style.whiteSpace=appSettings.wrap?'pre-wrap':'pre'; el.style.overflowX=appSettings.wrap?'hidden':'auto';});
+        if(appSettings.layout==='stacked') $('editor-grid')?.classList.add('layout-stacked'); else $('editor-grid')?.classList.remove('layout-stacked');
+        applyPanelMinimumWidth();
+        if (appSettings.debug) console.log('[CONSOLIUS] settings applied', appSettings);
+        saveAppSettings();
+    }
+
+    function applyPanelMinimumWidth(){
+        const min=Math.max(180,Math.min(480,Number(appSettings.minEditorWidth)||220));
+        document.querySelectorAll('.code-panel').forEach(p=>p.style.minWidth=`${min}px`);
+    }
+
+    function saveSettings() {
+        readSettingsForm();
+        if (appSettings.tabTitle) { window.sysSettings.tabTitle=appSettings.tabTitle; localStorage.setItem('consolius_tab_title',appSettings.tabTitle); }
+        if (appSettings.tabIcon) { window.sysSettings.tabIcon=appSettings.tabIcon; localStorage.setItem('consolius_tab_icon',appSettings.tabIcon); }
+        if (appSettings.proxyPrefix) { window.sysSettings.proxyPrefix=appSettings.proxyPrefix; localStorage.setItem('consolius_proxy_prefix',appSettings.proxyPrefix); }
+        if (appSettings.panicKey) { window.sysSettings.panicKey=appSettings.panicKey; localStorage.setItem('consolius_panic_key',appSettings.panicKey); }
+        saveAppSettings(); updateDocumentIdentity(); applyAdvancedSettings();
+        $('settings-save-status').textContent='Saved just now.';
+        notify('Settings saved');
+    }
+    window.saveSettings=saveSettings;
+
+    function loadSavedSettings(){
+        appSettings={...DEFAULT_SETTINGS,...loadJsonSetting(SETTINGS_KEY,DEFAULT_SETTINGS)};
+        window.sysSettings.tabTitle=localStorage.getItem('consolius_tab_title') || appSettings.tabTitle || defaultIdentity.title;
+        window.sysSettings.tabIcon=localStorage.getItem('consolius_tab_icon') || appSettings.tabIcon || defaultIdentity.icon;
+        window.sysSettings.proxyPrefix=localStorage.getItem('consolius_proxy_prefix') || 'https://splash.best/service/';
+        window.sysSettings.panicKey=localStorage.getItem('consolius_panic_key') || 'q';
+        appSettings.tabTitle=window.sysSettings.tabTitle; appSettings.tabIcon=window.sysSettings.tabIcon; appSettings.proxyPrefix=window.sysSettings.proxyPrefix; appSettings.panicKey=window.sysSettings.panicKey;
+        saveAppSettings(); fillSettingsForm(); applyAdvancedSettings(); updateDocumentIdentity();
+    }
+
+    function openControlPanel(page='general'){
+        const modal=$('control-panel-modal'); if(!modal) return;
+        modal.style.display='flex';
+        document.querySelectorAll('.settings-nav-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.settingsPage===page));
+        document.querySelectorAll('.settings-page').forEach(p=>p.classList.toggle('active',p.dataset.settingsPage===page));
+        fillSettingsForm();
+    }
+    function closeControlPanel(){ const modal=$('control-panel-modal'); if(modal) modal.style.display='none'; }
+    window.openControlPanel=openControlPanel; window.closeControlPanel=closeControlPanel;
+
+    function resetWorkspace(){
+        if(!window.confirm('Reset all saved game tabs and restore a blank workspace?')) return;
+        localStorage.removeItem(STORAGE_KEY); tabs=[createTab('New Game',true)]; activeTabId=tabs[0].id; saveWorkspace(); syncEditorsFromTab(); notify('Workspace reset');
+    }
+    function exportWorkspaceJson(){ syncActiveTabFromEditors(); const blob=new Blob([JSON.stringify({version:5,tabs,activeTabId,settings:appSettings,identity:defaultIdentity},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='consolius_workspace.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+    function importWorkspaceFile(file){ if(!file) return; file.text().then(text=>{ const data=JSON.parse(text); if(Array.isArray(data.tabs)&&data.tabs.length){tabs=data.tabs.map(normalizeTab); activeTabId=tabs.some(t=>t.id===data.activeTabId)?data.activeTabId:tabs[0].id; if(data.settings) appSettings={...DEFAULT_SETTINGS,...data.settings}; saveWorkspace(); saveAppSettings(); syncEditorsFromTab(); fillSettingsForm(); applyAdvancedSettings(); notify('Workspace imported'); } }).catch(e=>notify(`Import failed: ${e.message}`,'error')); }
+    function clearAllSettings(){ if(!confirm('Reset CONSOLIUS settings and identity? Your game tabs will remain.')) return; localStorage.removeItem(SETTINGS_KEY); localStorage.removeItem('consolius_tab_title'); localStorage.removeItem('consolius_tab_icon'); localStorage.removeItem('consolius_proxy_prefix'); localStorage.removeItem('consolius_panic_key'); loadSavedSettings(); notify('Settings reset'); }
+
+    function toggleFullscreen(){ if(!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+    window.toggleFullscreen=toggleFullscreen;
+
+    // Backward-compatible inline handlers.
+    window.importHtmlFile = importHtmlFile;
+    window.importCssFile = importCssFile;
+    window.importJsFiles = importJsFiles;
+    window.runCurrentTab = runCurrentTab;
+    window.stopCurrentTab = stopCurrentTab;
+    window.refreshCurrentTab = refreshCurrentTab;
+
+    function wireUi() {
+        // Critical fix: all local file/import buttons are wired with direct listeners.
+        $('btn-import-html')?.addEventListener('click', () => $('ide-import-html')?.click());
+        $('btn-import-css')?.addEventListener('click', () => $('ide-import-css')?.click());
+        $('btn-import-js')?.addEventListener('click', () => $('ide-import-js')?.click());
+        $('ide-import-html')?.addEventListener('change', e => importHtmlFile(e.target));
+        $('ide-import-css')?.addEventListener('change', e => importCssFile(e.target));
+        $('ide-import-js')?.addEventListener('change', e => importJsFiles(e.target));
+        $('btn-add-tab')?.addEventListener('click', () => addGameTab());
+        $('btn-duplicate-tab')?.addEventListener('click', () => addGameTab(getActiveTab()));
+        $('btn-delete-tab')?.addEventListener('click', () => deleteTab(activeTabId));
+        $('btn-rename-tab')?.addEventListener('click', saveIdentity);
+        $('btn-save-tab')?.addEventListener('click', () => { syncActiveTabFromEditors(); saveIdentity(); });
+        $('btn-run-game')?.addEventListener('click', runCurrentTab);
+        $('btn-stop-game')?.addEventListener('click', stopCurrentTab);
+        $('btn-refresh-game')?.addEventListener('click', refreshCurrentTab);
+        $('btn-popout-game')?.addEventListener('click', popoutCurrentGame);
+        $('btn-open-cloaked')?.addEventListener('click', popoutCurrentGame);
+        $('btn-export-zip')?.addEventListener('click', exportToZip);
+        $('btn-fullscreen')?.addEventListener('click', toggleFullscreen);
+        $('btn-style-center')?.addEventListener('click', openControlPanel);
+        $('btn-exit-ide')?.addEventListener('click', () => switchScreen('screen-terminal'));
+        $('btn-import-rom')?.addEventListener('click', () => $('rom-file-input')?.click());
+        $('rom-file-input')?.addEventListener('change', e => window.handleRomImport(e.target));
+        $('btn-rom-cloak')?.addEventListener('click', launchGameInAboutBlank);
+        $('btn-add-js-slot')?.addEventListener('click', () => addJsSlot());
+        $('btn-close-settings')?.addEventListener('click', closeControlPanel);
+        $('btn-close-settings-footer')?.addEventListener('click', closeControlPanel);
+        $('btn-save-settings')?.addEventListener('click', saveSettings);
+        $('btn-open-settings-ide')?.addEventListener('click', () => openControlPanel('general'));
+        $('btn-open-settings-proxy')?.addEventListener('click', () => openControlPanel('general'));
+        $('btn-reset-editor-layout')?.addEventListener('click', resetEditorLayout);
+        $('btn-format-current')?.addEventListener('click', basicFormatCurrent);
+        document.querySelectorAll('.settings-nav-btn').forEach(btn=>btn.addEventListener('click',()=>openControlPanel(btn.dataset.settingsPage)));
+        $('btn-export-workspace')?.addEventListener('click', exportWorkspaceJson);
+        $('btn-import-workspace')?.addEventListener('click', () => $('workspace-import-file')?.click());
+        $('workspace-import-file')?.addEventListener('change', e=>{ importWorkspaceFile(e.target.files?.[0]); e.target.value=''; });
+        $('btn-reset-workspace')?.addEventListener('click', resetWorkspace);
+        $('btn-clear-settings')?.addEventListener('click', clearAllSettings);
+
+
+        document.querySelectorAll('#htmlCode,#cssCode,#jsCode').forEach(el => el.addEventListener('input', () => {
+            syncActiveTabFromEditors();
+        }));
+
+        $('main-term-input')?.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                const command = e.target.value.trim();
+                e.target.value = '';
+                executeCommand(command);
+            }
+        });
+
+        $('sys-password-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+        document.querySelectorAll('.settings-page input,.settings-page select').forEach(el=>el.addEventListener('change',()=>{ readSettingsForm(); saveSettings(); }));
+        $('btn-exit-games')?.addEventListener('click', () => switchScreen('screen-terminal'));
+        $('proxy-frame')?.addEventListener('load', proxyFrameLoaded);
+        $('proxy-frame')?.addEventListener('error', proxyFrameError);
+        document.querySelectorAll('.proxy-hud-badge').forEach(el => el.addEventListener('click', toggleOverlayTerminal));
+    }
+
+
+    function installPanelResizers(){
+        const saved=loadJsonSetting('consolius_editor_widths_v5',{htmlWidth:0,cssWidth:0,jsWidth:0});
+        const panels=[['panel-html','htmlWidth'],['panel-css','cssWidth'],['panel-js','jsWidth']];
+        panels.forEach(([id,key])=>{
+            const panel=$(id); if(!panel) return;
+            if(saved[key]) panel.style.flex=`0 0 ${saved[key]}px`;
+            const handle=panel.querySelector('.panel-resizer'); if(!handle || handle.dataset.bound) return;
+            handle.dataset.bound='1';
+            handle.addEventListener('pointerdown',ev=>{
+                ev.preventDefault(); handle.setPointerCapture?.(ev.pointerId);
+                const grid=$('editor-grid'); const startX=ev.clientX; const start=panel.getBoundingClientRect().width;
+                const min=Math.max(180,Math.min(480,Number(appSettings.minEditorWidth)||220));
+                const max=Math.max(min+40,Math.min(window.innerWidth*0.55,760));
+                const move=e=>{ const w=Math.max(min,Math.min(max,start+(e.clientX-startX))); panel.style.flex=`0 0 ${w}px`; };
+                const up=()=>{ const w=Math.round(panel.getBoundingClientRect().width); const next=loadJsonSetting('consolius_editor_widths_v5',{htmlWidth:0,cssWidth:0,jsWidth:0}); next[key]=w; try{localStorage.setItem('consolius_editor_widths_v5',JSON.stringify(next));}catch(_){} window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+                window.addEventListener('pointermove',move); window.addEventListener('pointerup',up,{once:true});
+            });
+        });
+    }
+
+    function resetEditorLayout(){ localStorage.removeItem('consolius_editor_widths_v5'); document.querySelectorAll('.code-panel').forEach(p=>p.style.flex='1 1 0'); applyPanelMinimumWidth(); installPanelResizers(); notify('Editor widths reset'); }
+    function basicFormatCurrent(){
+        const active=document.activeElement; if(!active || !['TEXTAREA','INPUT'].includes(active.tagName)) return;
+        if(!active.value) return;
+        active.value=active.value.replace(/\r\n/g,'\n').replace(/\t/g,'    ');
+        syncActiveTabFromEditors(); notify('Normalized indentation and line endings');
+    }
+
+
+    function startPerformanceSampler(){
+        const hud=$('perf-hud'); if(!hud) return;
+        let frames=0, last=performance.now();
+        const tick=now=>{
+            frames++;
+            const elapsed=now-last;
+            if(elapsed>=Math.max(250,Number(appSettings.hudFrequency)||500)){
+                const fps=Math.round((frames*1000)/elapsed); frames=0; last=now;
+                $('perf-fps') && ($('perf-fps').textContent=String(Math.max(0,Math.min(240,fps))));
+                $('perf-cpu') && ($('perf-cpu').textContent=(navigator.hardwareConcurrency?`${Math.max(0,Math.min(100,Math.round((1-(fps/60))*35*10)/10))}%`:'n/a'));
+                if(performance.memory) $('perf-mem') && ($('perf-mem').textContent=`${(performance.memory.usedJSHeapSize/1048576).toFixed(1)} MB`);
+            }
+            requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }
+
+    function startAutosave() {
+        setInterval(() => {
+            if (!appSettings.autosave) return;
+            const tab = getActiveTab();
+            if (tab && document.activeElement && ['TEXTAREA','INPUT'].includes(document.activeElement.tagName)) syncActiveTabFromEditors();
+        }, 1500);
+    }
+
+    // Compatibility placeholders for legacy tour controls.
+    window.tourSkip = () => { $('tour-overlay')?.classList.remove('active'); $('tour-spotlight')?.classList.remove('active'); $('tour-tooltip')?.classList.remove('active'); };
+    window.tourNext = window.tourSkip;
+
+    // Receive volume commands from runner frames.
+    window.addEventListener('message', event => {
+        if (event.data?.type === 'CONSOLIUS_VOLUME') {
+            const tab = getActiveTab();
+            if (tab) setTabVolume(tab.id, Number(event.data.value));
+        }
+        if (event.data?.type === 'CONSOLIUS_READY') {
+            const tab = getActiveTab();
+            if (tab) applyRunnerVolume(tab.id);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadWorkspace();
+        loadSavedSettings();
+        wireUi();
+        installPanelResizers();
+        syncEditorsFromTab();
+        renderRunnerStack();
+        const startupMap={terminal:'screen-terminal',ide:'screen-ide',games:'screen-games'};
+        let startupScreen=startupMap[appSettings.startup] || 'screen-terminal';
+        if(appSettings.rememberScreen){ try { const saved=localStorage.getItem('consolius_last_screen_v5'); if(saved && $(''+saved)) startupScreen=saved; } catch(_){} }
+        switchScreen(startupScreen);
+        startPerformanceSampler();
+        startAutosave();
+
+        window.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { closeControlPanel(); $('overlay-terminal')?.classList.remove('active'); }
+            if ((e.key === '`' || e.key === '+') && document.activeElement?.tagName !== 'TEXTAREA' && document.activeElement?.tagName !== 'INPUT') toggleOverlayTerminal();
+            if (e.ctrlKey && e.key.toLowerCase() === window.sysSettings.panicKey.toLowerCase()) {
+                window.location.href = 'https://www.google.com';
+            }
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFullscreen(); return; }
+            if (e.ctrlKey && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                syncActiveTabFromEditors();
+                saveIdentity();
+            }
+            if (e.ctrlKey && e.key.toLowerCase() === 'n') {
+                e.preventDefault();
+                addGameTab();
+            }
+            if (e.altKey && e.key === 'ArrowLeft') {
+                const idx = tabs.findIndex(t => t.id === activeTabId);
+                if (idx > 0) switchToTab(tabs[idx-1].id);
+            }
+            if (e.altKey && e.key === 'ArrowRight') {
+                const idx = tabs.findIndex(t => t.id === activeTabId);
+                if (idx >= 0 && idx < tabs.length-1) switchToTab(tabs[idx+1].id);
+            }
+        });
+    });
+})();
+
+</script>
+</body>
+
+</html>

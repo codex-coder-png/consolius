@@ -1004,26 +1004,28 @@ select:focus, input[type="text"]:focus {
 
 #tour-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background: rgba(0, 0, 0, 0.6);
     z-index: 99999;
     display: none;
-    pointer-events: auto;
+    pointer-events: none;
+    visibility: hidden;
     transition: opacity 0.4s;
     opacity: 0;
 }
 
+
 #tour-overlay.active {
     display: block;
+    visibility: visible;
+    pointer-events: auto;
     opacity: 1;
 }
 
 /* The transparent cutout box that glides smoothly */
 #tour-spotlight {
     display: none;
+    pointer-events: none !important;
     position: absolute;
     border-radius: 8px;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75), 0 0 15px 2px var(--console-accent);
@@ -1031,7 +1033,7 @@ select:focus, input[type="text"]:focus {
                 left 0.45s cubic-bezier(0.25, 1, 0.5, 1),
                 width 0.45s cubic-bezier(0.25, 1, 0.5, 1),
                 height 0.45s cubic-bezier(0.25, 1, 0.5, 1);
-    pointer-events: none;
+    pointer-events: none !important;
     z-index: 100000;
 }
 
@@ -1052,7 +1054,8 @@ select:focus, input[type="text"]:focus {
     gap: 14px;
     font-family: var(--console-font);
     font-size: 12px;
-    pointer-events: auto;
+    pointer-events: none;
+    visibility: hidden;
     opacity: 0;
     transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), top 0.4s cubic-bezier(0.25, 1, 0.5, 1), left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     transform: translateY(16px) scale(0.95);
@@ -1060,6 +1063,8 @@ select:focus, input[type="text"]:focus {
 
 #tour-tooltip.active {
     opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
     transform: translateY(0) scale(1);
 }
 
@@ -1256,3 +1261,561 @@ select:focus, input[type="text"]:focus {
     width: 100%;
     height: 100%;
 }
+/* ==========================================================================\n   V4 QUALITY-OF-LIFE / MULTI-GAME WORKSPACE\n   ========================================================================== */
+
+#sidebar { min-width: 280px; }
+#sidebar .toolbar-btn,
+#workspace .toolbar-btn,
+#screen-games .toolbar-btn,
+#control-panel-modal button { pointer-events: auto !important; position: relative; z-index: 20; }
+
+#sidebar .toolbar-btn { width: 100%; justify-content: flex-start; }
+#sidebar input, #workspace textarea, #workspace input { user-select: text; }
+
+.active-tab-tools {
+    margin: 0 0 8px;
+    padding: 10px;
+    border: 1px solid var(--ide-border-color);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015));
+}
+.active-tab-tools-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--console-accent);
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+.active-tab-tools label {
+    display: block;
+    font-size: 9px;
+    color: #777789;
+    margin-top: 7px;
+}
+.active-tab-tools input {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 7px 8px;
+    border-radius: 7px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: #0a0a0f;
+    color: #fff;
+    outline: none;
+    user-select: text;
+}
+.active-tab-tools input:focus {
+    border-color: var(--console-accent);
+    box-shadow: 0 0 0 2px rgba(0,255,204,.08);
+}
+.active-tab-actions { display:flex; gap:6px; margin-top:8px; }
+.active-tab-actions .toolbar-btn { margin:0; flex:1; min-width:0; justify-content:center !important; }
+.active-tab-actions .danger { color:#ff6b81; }
+
+.tab-subtitle {
+    font-size: 9px;
+    color: rgba(255,255,255,.4);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tab.active .tab-subtitle { color: rgba(0,0,0,.55); }
+.tab-icon { font-size: 12px; }
+.tab-running-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #555;
+    box-shadow: none;
+}
+.tab-running-dot.on { background:#00ff88; box-shadow:0 0 8px rgba(0,255,136,.65); }
+
+#output-area {
+    min-width: 260px;
+    background: #07080c !important;
+    display:flex;
+    flex-direction:column;
+}
+.runner-toolbar {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 7px 10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:#090a10;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    z-index:30;
+}
+.runner-status { display:flex; align-items:center; gap:8px; font-size:10px; color:#aaa; min-width:0; }
+.runner-dot { width:7px; height:7px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px rgba(0,255,136,.7); }
+.runner-actions { display:flex; gap:5px; }
+.mini-btn, .mini-icon-btn {
+    border:1px solid rgba(255,255,255,.09);
+    background:rgba(255,255,255,.04);
+    color:#cfd0dc;
+    border-radius:6px;
+    cursor:pointer;
+    transition:.16s ease;
+}
+.mini-btn { padding:5px 8px; font-size:10px; }
+.mini-icon-btn { width:26px; height:24px; }
+.mini-btn:hover, .mini-icon-btn:hover { background:var(--ide-accent); color:#000; border-color:var(--ide-accent); }
+
+#game-runner-stack { position:relative; flex:1; min-height:0; overflow:hidden; background:#000; }
+.game-runner-card {
+    position:absolute;
+    inset:0;
+    background:#000;
+    opacity:0;
+    pointer-events:none;
+    visibility:hidden;
+    transition:opacity .18s ease;
+}
+.game-runner-card.active {
+    opacity:1;
+    pointer-events:auto;
+    visibility:visible;
+    z-index:4;
+}
+.game-runner-card:not(.active) { z-index:1; }
+.game-runner-card.paused::after {
+    content:'STOPPED';
+    position:absolute;
+    inset:0;
+    display:grid;
+    place-items:center;
+    color:#fff;
+    background:rgba(0,0,0,.58);
+    font:800 12px 'Fira Code',monospace;
+    letter-spacing:.18em;
+    pointer-events:none;
+}
+.game-runner-frame { width:100%; height:100%; border:0; background:#fff; display:block; }
+.runner-overlay {
+    position:absolute;
+    top:10px;
+    left:10px;
+    right:10px;
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    pointer-events:none;
+    opacity:0;
+    transition:.2s;
+    font:700 9px 'Fira Code',monospace;
+    color:#fff;
+}
+.game-runner-card:hover .runner-overlay { opacity:.75; }
+.runner-overlay span {
+    padding:4px 6px;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:999px;
+    background:rgba(0,0,0,.45);
+    backdrop-filter:blur(8px);
+}
+
+.game-studio-note {
+    margin-top:auto;
+    padding:9px;
+    border:1px solid rgba(0,255,204,.09);
+    border-radius:8px;
+    background:rgba(0,255,204,.025);
+    color:#6e8e88;
+    font-size:9px;
+    line-height:1.5;
+}
+
+.extra-js-panel { min-height:150px; }
+.extra-js-code {
+    width:100%;
+    flex:1;
+    resize:none;
+    min-height:110px;
+    padding:10px;
+    border:0;
+    outline:none;
+    background:#101116;
+    color:#e8e8f2;
+    font:12px/1.55 'Fira Code',monospace;
+    user-select:text;
+}
+
+#screen-ide .panel textarea { user-select:text; }
+#screen-ide .toolbar, #screen-games .toolbar, #screen-proxy .toolbar { position:relative; z-index:25; }
+
+#sys-notification.show { opacity:1; transform:translateY(0); pointer-events:auto; }
+.sys-notification[data-kind="error"] { border-color:rgba(255,70,90,.5); }
+.sys-notification[data-kind="warn"] { border-color:rgba(255,198,70,.5); }
+
+/* Prevent transparent screens / overlays from stealing pointer input. */
+.screen:not(.active) button,
+.screen:not(.active) input,
+.screen:not(.active) textarea { pointer-events:none !important; }
+
+/* Import inputs remain hidden while their visible buttons stay clickable. */
+input[type="file"][style*="display:none"] { pointer-events:none !important; }
+
+@media (max-width: 1100px) {
+    #sidebar { min-width:240px; width:240px !important; }
+    #editor-grid { flex-wrap:wrap; overflow:auto; }
+    #panel-html,#panel-css,#panel-js { min-height:220px; min-width:320px; }
+    #output-area { min-height:320px; min-width:100%; }
+}
+
+/* ============================================================================
+   V5 EDITOR RESIZING + SETTINGS + BOTTOM-RIGHT HUD
+   ============================================================================ */
+
+/* Performance HUD: bottom-right by default, user-configurable in Settings. */
+#perf-hud {
+    top: auto !important;
+    right: 14px !important;
+    bottom: 14px !important;
+    left: auto !important;
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+}
+#perf-hud.hud-bottom-right { right:14px !important; bottom:14px !important; left:auto !important; top:auto !important; }
+#perf-hud.hud-bottom-left { left:14px !important; bottom:14px !important; right:auto !important; top:auto !important; }
+#perf-hud.hud-top-right { right:14px !important; top:14px !important; left:auto !important; bottom:auto !important; }
+#perf-hud.hud-top-left { left:14px !important; top:14px !important; right:auto !important; bottom:auto !important; }
+
+/* The visible code areas are the editor. Remove the nested-looking browser textarea box. */
+#editor-grid {
+    align-items: stretch;
+    min-width: 0;
+    min-height: 0;
+}
+#panel-html, #panel-css, #panel-js {
+    position: relative;
+    min-width: 220px;
+    flex: 1 1 0;
+}
+#screen-ide .code-panel > textarea,
+#screen-ide #htmlCode,
+#screen-ide #cssCode,
+#screen-ide #jsCode {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    flex: 1 1 auto;
+    resize: none;
+    border: 0;
+    border-radius: 0;
+    outline: none;
+    padding: 12px 18px 12px 12px;
+    background: #101116;
+    color: #e9e9f4;
+    font: 13px/1.55 'Fira Code', monospace;
+    tab-size: 4;
+    white-space: pre-wrap;
+    overflow: auto;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    box-shadow: none;
+}
+#screen-ide .code-panel > textarea:focus {
+    box-shadow: inset 0 0 0 1px rgba(0,255,204,.16);
+}
+.panel-resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 7px;
+    cursor: col-resize;
+    z-index: 50;
+    background: transparent;
+    transition: background .15s ease;
+}
+.panel-resizer:hover,
+.panel-resizer:active {
+    background: rgba(0,255,204,.35);
+}
+.panel-resizer::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 2px;
+    width: 2px;
+    height: 42px;
+    transform: translateY(-50%);
+    border-radius: 2px;
+    background: rgba(255,255,255,.18);
+}
+
+/* Keep extra JS runners full-size too. */
+.extra-js-panel { min-width: 220px; }
+.extra-js-panel .extra-js-code {
+    min-height: 140px;
+    width: 100%;
+    resize: none;
+    border-radius: 0;
+    margin: 0;
+    background: #101116;
+    color: #e9e9f4;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* Settings control center. */
+#control-panel-modal {
+    padding: 20px;
+}
+.settings-modal {
+    width: min(1080px, 94vw) !important;
+    height: min(780px, 88vh);
+    max-height: 88vh !important;
+    padding: 0 !important;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.settings-modal .modal-header {
+    padding: 18px 20px;
+    margin: 0;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.02);
+}
+.settings-kicker {
+    color: #686978;
+    font: 700 9px/1.2 'Fira Code', monospace;
+    letter-spacing: .18em;
+    margin-bottom: 5px;
+}
+.settings-layout {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 190px minmax(0,1fr);
+}
+.settings-nav {
+    border-right: 1px solid rgba(255,255,255,.07);
+    background: #090a0f;
+    padding: 10px;
+    overflow-y: auto;
+}
+.settings-nav-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 10px;
+    margin-bottom: 5px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #8f90a2;
+    cursor: pointer;
+    text-align: left;
+    font: 600 11px 'Inter', sans-serif;
+}
+.settings-nav-btn:hover { background: rgba(255,255,255,.045); color:#fff; }
+.settings-nav-btn.active {
+    background: rgba(0,255,204,.09);
+    border-color: rgba(0,255,204,.18);
+    color: var(--console-accent);
+}
+.settings-pages { min-width:0; min-height:0; overflow:auto; padding: 18px; }
+.settings-page { display:none; min-height:100%; }
+.settings-page.active { display:block; }
+.settings-page-title {
+    font: 800 15px 'Inter', sans-serif;
+    color:#fff;
+    margin-bottom: 14px;
+}
+.settings-grid {
+    display:grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 10px;
+}
+.settings-grid.single-wide { grid-template-columns: 1fr; }
+.setting-card {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    min-height:68px;
+    padding: 12px;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:10px;
+    background:linear-gradient(180deg, rgba(255,255,255,.032), rgba(255,255,255,.012));
+    color:#ddd;
+}
+.setting-card > span { min-width:0; }
+.setting-card b { display:block; font:700 11px 'Inter',sans-serif; color:#f1f1f7; margin-bottom:3px; }
+.setting-card small { display:block; color:#6d6e7d; font:400 9px/1.45 'Inter',sans-serif; }
+.setting-card > input:not(.setting-toggle),
+.setting-card > select {
+    flex:0 0 44%;
+    min-width:120px;
+    max-width:280px;
+    background:#0b0c11;
+    color:#f1f1f5;
+    border:1px solid rgba(255,255,255,.09);
+    border-radius:7px;
+    padding:7px 8px;
+    outline:none;
+}
+.setting-card > input[type=color] { min-width:52px; max-width:62px; height:34px; padding:2px; }
+.setting-card > input[type=range] { accent-color: var(--console-accent); }
+.setting-toggle {
+    appearance: none;
+    flex:0 0 auto;
+    width: 40px;
+    height: 22px;
+    border-radius: 20px;
+    border:1px solid rgba(255,255,255,.12);
+    background:#2a2b34;
+    position:relative;
+    cursor:pointer;
+}
+.setting-toggle::after {
+    content:'';
+    position:absolute;
+    top:3px;
+    left:3px;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background:#aaa;
+    transition:.16s ease;
+}
+.setting-toggle:checked { background: rgba(0,255,204,.2); border-color: rgba(0,255,204,.45); }
+.setting-toggle:checked::after { left:21px; background:var(--console-accent); box-shadow:0 0 8px rgba(0,255,204,.4); }
+.settings-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+.settings-actions.vertical { flex-direction:column; }
+.settings-actions .toolbar-btn { width:auto; justify-content:center; }
+.settings-actions.vertical .toolbar-btn { width:100%; }
+.settings-actions .toolbar-btn.primary,
+.settings-footer .primary { background:var(--console-accent); color:#000; border-color:var(--console-accent); font-weight:800; }
+.settings-actions .toolbar-btn.danger { color:#ff6b81; }
+.shortcut-table { display:grid; gap:7px; }
+.shortcut-table > div {
+    display:flex;
+    align-items:center;
+    gap:5px;
+    min-height:42px;
+    padding:9px 11px;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:8px;
+    background:rgba(255,255,255,.02);
+    color:#90919f;
+    font-size:11px;
+}
+.shortcut-table span { margin-left:auto; color:#cfd0dc; }
+kbd {
+    padding:2px 6px;
+    border-radius:4px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.07);
+    color:#fff;
+    font:700 9px 'Fira Code',monospace;
+}
+.settings-footer {
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:11px 18px;
+    border-top:1px solid rgba(255,255,255,.08);
+    background:#090a0f;
+}
+#settings-save-status { color:#606171; font-size:10px; }
+
+/* Density and motion settings. */
+body.density-compact #workspace { --ide-gap: 5px; }
+body.density-compact #sidebar { padding: 7px !important; }
+body.density-compact #workspace header { padding: 8px 11px; }
+body.density-spacious #workspace { --ide-gap: 12px; }
+body.density-spacious #sidebar { padding: 16px !important; }
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration: .001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
+.no-blur *, .no-blur *::before, .no-blur *::after { backdrop-filter:none !important; }
+
+/* Prevent source/code iframes from generating the local-file navigation error. */
+#proxy-frame { background:#000; }
+
+@media (max-width: 1050px) {
+    .settings-layout { grid-template-columns: 160px minmax(0,1fr); }
+    .settings-grid { grid-template-columns:1fr; }
+}
+
+
+/* ==========================================================================
+   V6 BUILT-IN GAME STUDIO / EMULATORJS
+   ========================================================================== */
+.games-brand{font-family:'Fira Code',monospace;font-size:13px;color:var(--console-accent);font-weight:700;margin-left:12px;display:flex;align-items:center;gap:8px}
+.games-engine-pill{font-size:8px;padding:3px 7px;border-radius:999px;border:1px solid rgba(0,255,204,.2);background:rgba(0,255,204,.06);color:#78bdb1;letter-spacing:.08em}
+.games-top-actions{margin-left:auto;display:flex;gap:7px}
+.games-studio-layout{flex:1;display:flex;min-height:0;overflow:hidden;background:#05060a}
+.games-sidebar{width:310px;min-width:310px;background:rgba(7,8,13,.96);border-right:1px solid rgba(255,255,255,.08);padding:14px;display:flex;flex-direction:column;gap:9px;overflow:auto;font-family:'Inter',sans-serif}
+.games-section-title,.games-library-head{font-size:10px;text-transform:uppercase;font-weight:800;letter-spacing:.12em;color:#747587;display:flex;justify-content:space-between;align-items:center}
+.game-import-primary{background:var(--console-accent)!important;color:#000!important;border:none!important;font-weight:800!important;justify-content:center!important}
+.games-control-row{display:flex;flex-direction:column;gap:5px}
+.games-control-row label{font-size:9px;color:#77798a;text-transform:uppercase;letter-spacing:.08em}
+.games-control-row select,.games-control-row input[type=range]{width:100%}
+.games-control-row select{background:#101119;border:1px solid rgba(255,255,255,.08);color:#e9e9f2;border-radius:7px;padding:8px;font-size:11px;outline:none}
+.games-control-row select:focus{border-color:rgba(0,255,204,.45)}
+.games-volume-row label{display:flex;justify-content:space-between}
+.games-volume-row input[type=range]{accent-color:var(--console-accent)}
+.games-current-card{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025);border-radius:9px}
+.games-current-icon{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;background:rgba(0,255,204,.08);color:var(--console-accent)}
+.games-current-meta{min-width:0;display:flex;flex-direction:column;gap:3px}
+.games-current-meta strong{font-size:11px;color:#eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.games-current-meta small{font-size:9px;color:#6f7180;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.games-actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.games-actions-grid .mini-btn{padding:7px 8px}
+.games-rom-library{display:flex;flex-direction:column;gap:5px;overflow:auto;max-height:190px;min-height:20px}
+.games-rom-item{display:flex;gap:8px;align-items:center;width:100%;padding:7px 8px;border:1px solid rgba(255,255,255,.06);border-radius:7px;background:rgba(255,255,255,.018);color:#ddd;text-align:left;cursor:pointer}
+.games-rom-item:hover{background:rgba(0,255,204,.06);border-color:rgba(0,255,204,.17)}
+.games-rom-icon{width:25px;height:25px;border-radius:6px;display:grid;place-items:center;background:#12141a;color:#8ccfc2;flex:0 0 auto}
+.games-rom-copy{min-width:0;display:flex;flex-direction:column;gap:2px}
+.games-rom-copy b{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e9e9ef}
+.games-rom-copy small{font-size:8px;color:#707282}
+.games-player-shell{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;background:#000}
+.games-player-toolbar{height:39px;min-height:39px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;background:#090a10;border-bottom:1px solid rgba(255,255,255,.08);z-index:5}
+.games-toolbar-right{display:flex;align-items:center;gap:6px}
+#games-core-badge{font:700 8px 'Fira Code',monospace;color:#8b8d9c;padding:3px 6px;border:1px solid rgba(255,255,255,.08);border-radius:999px}
+.games-player-area{flex:1;min-height:0;position:relative;overflow:hidden;background:#000}
+.games-empty-state{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;color:#7b7d8d;z-index:2;background:radial-gradient(circle at center,rgba(0,255,204,.045),transparent 45%),#05060a}
+.games-empty-state[hidden]{display:none}
+.games-empty-icon{width:70px;height:70px;border-radius:20px;display:grid;place-items:center;background:rgba(0,255,204,.06);border:1px solid rgba(0,255,204,.12);color:var(--console-accent);font-size:28px;margin-bottom:16px}
+.games-empty-state h2{color:#e8e8ef;font:800 20px 'Inter',sans-serif;margin-bottom:8px}
+.games-empty-state p{font-size:11px;max-width:520px;line-height:1.6;margin-bottom:14px}
+.games-supported-tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-width:560px;margin-bottom:18px}
+.games-supported-tags span{font:700 8px 'Fira Code',monospace;padding:4px 6px;border-radius:999px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);color:#848696}
+.games-emulator-host{position:absolute;inset:0;z-index:1;background:#000}
+.games-emulator-frame,.games-web-frame{width:100%;height:100%;border:0;background:#000;display:block}
+.games-web-frame[hidden]{display:none}
+.status-error{background:#ff5060!important;box-shadow:0 0 8px rgba(255,80,96,.6)!important}
+.status-loading{background:#ffc34f!important;box-shadow:0 0 8px rgba(255,195,79,.55)!important}
+#screen-games:fullscreen .games-sidebar{display:none}
+#screen-games:fullscreen .games-player-shell{width:100%}
+
+/* Editor wrapping: preserve indentation/newlines while looping long lines back inside each panel. */
+#screen-ide .code-panel > textarea,
+#screen-ide #htmlCode,
+#screen-ide #cssCode,
+#screen-ide #jsCode,
+#screen-ide .extra-js-code{
+    overflow-wrap:anywhere;
+    word-break:break-word;
+}
+#screen-ide .code-panel > textarea.wrap-enabled,
+#screen-ide #htmlCode.wrap-enabled,
+#screen-ide #cssCode.wrap-enabled,
+#screen-ide #jsCode.wrap-enabled,
+#screen-ide .extra-js-code.wrap-enabled{white-space:pre-wrap!important;overflow-x:hidden!important}
+#screen-ide .code-panel > textarea.wrap-disabled,
+#screen-ide #htmlCode.wrap-disabled,
+#screen-ide #cssCode.wrap-disabled,
+#screen-ide #jsCode.wrap-disabled,
+#screen-ide .extra-js-code.wrap-disabled{white-space:pre!important;overflow-x:auto!important}
