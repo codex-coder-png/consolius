@@ -1819,3 +1819,37 @@ body.density-spacious #sidebar { padding: 16px !important; }
 #screen-ide #cssCode.wrap-disabled,
 #screen-ide #jsCode.wrap-disabled,
 #screen-ide .extra-js-code.wrap-disabled{white-space:pre!important;overflow-x:auto!important}
+
+/* === DIRECT EMBEDDED EMULATORJS PLAYER === */
+.games-emulator-host {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    background: #000;
+    overflow: hidden;
+}
+#consolius-emulator-root,
+#consolius-emulator-root > #game,
+#consolius-emulator-root canvas,
+#consolius-emulator-root video,
+#consolius-emulator-root iframe {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    border: 0 !important;
+}
+#consolius-emulator-root canvas {
+    display: block !important;
+    margin: 0 auto !important;
+    object-fit: contain !important;
+    background: #000 !important;
+}
+#consolius-emulator-root .ejs_overlay,
+#consolius-emulator-root .ejs_menu,
+#consolius-emulator-root .ejs_controls {
+    z-index: 5;
+}

@@ -53,7 +53,7 @@
     let gamesEmulatorFrame = null;
     let gamesEmulatorDocumentUrl = null;
     const romLibrary = [];
-    const EMULATORJS_DATA = 'https://cdn.emulatorjs.org/stable/data/';
+    const EMULATORJS_DATA = 'https://cdn.emulatorjs.org/latest/data/';
     let extraJsEditors = [];
 
     const $ = id => document.getElementById(id);
@@ -648,67 +648,110 @@
         if($('games-core-badge')) $('games-core-badge').textContent=(select?.value||'auto').toUpperCase();
     }
 
-    function revokeRomUrls(clearBios=false){
+    function revokeRomUrls(){
         if(currentRomObjectUrl){ try{ URL.revokeObjectURL(currentRomObjectUrl); }catch(_){} currentRomObjectUrl=null; }
+        if(currentBiosObjectUrl){ try{ URL.revokeObjectURL(currentBiosObjectUrl); }catch(_){} currentBiosObjectUrl=null; }
         if(gamesEmulatorDocumentUrl){ try{ URL.revokeObjectURL(gamesEmulatorDocumentUrl); }catch(_){} gamesEmulatorDocumentUrl=null; }
-        if(clearBios && currentBiosObjectUrl){ try{ URL.revokeObjectURL(currentBiosObjectUrl); }catch(_){} currentBiosObjectUrl=null; }
+    }
+
+    function clearEjsGlobals(){
+        const keys=['EJS_player','EJS_gameName','EJS_gameUrl','EJS_biosUrl','EJS_core','EJS_pathtodata','EJS_startOnLoaded','EJS_askBeforeExit','EJS_threads','EJS_volume','EJS_ready','EJS_onExit','EJS_setVolume','EJS_emulator'];
+        for(const key of keys){ try{ delete window[key]; }catch(_){ try{ window[key]=undefined; }catch(__){} } }
     }
 
     function destroyGamesEmulator(){
+        try{
+            if(window.EJS_emulator){
+                if(typeof window.EJS_emulator.exit === 'function') window.EJS_emulator.exit();
+                else if(typeof window.EJS_emulator.destroy === 'function') window.EJS_emulator.destroy();
+            }
+        }catch(_){ }
         const host=$('games-emulator-host'); if(host) host.innerHTML='';
         const web=$('games-web-frame'); if(web){ web.hidden=true; web.src='about:blank'; }
-        if(gamesEmulatorFrame){ try{ gamesEmulatorFrame.remove(); }catch(_){} gamesEmulatorFrame=null; }
         if(window.__CONSOLIUS_EMULATOR_SCRIPT__){ try{ window.__CONSOLIUS_EMULATOR_SCRIPT__.remove(); }catch(_){} window.__CONSOLIUS_EMULATOR_SCRIPT__=null; }
+        document.querySelectorAll('[data-consolius-ejs-style="1"], [data-consolius-ejs-script="1"]').forEach(el=>{ try{el.remove();}catch(_){} });
+        clearEjsGlobals();
+        gamesEmulatorFrame=null;
     }
 
-    function buildEmulatorHtml({romUrl, biosUrl, core, name, scale='fit', volume=1}){
-        const safeName=escapeHtml(name||'CONSOLIUS Game');
-        const coreValue=core==='auto'?'':core;
-        const scaleCss = scale==='stretch' ? 'object-fit:fill' : scale==='integer' ? 'image-rendering:pixelated' : 'object-fit:contain';
-        return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeName}</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}#game{width:100vw;height:100vh;max-width:100%;background:#000;${scaleCss}}#game>*{max-width:100%!important;max-height:100%!important}</style></head><body><div id="game"></div><script>
-window.EJS_player='#game';
-window.EJS_gameName=${JSON.stringify(name||'CONSOLIUS Game')};
-window.EJS_gameUrl=${JSON.stringify(romUrl)};
-window.EJS_biosUrl=${JSON.stringify(biosUrl||'')};
-window.EJS_core=${JSON.stringify(coreValue || 'gba')};
-window.EJS_pathtodata=${JSON.stringify(EMULATORJS_DATA)};
-window.EJS_startOnLoaded=true;
-window.EJS_askBeforeExit=false;
-window.EJS_threads=${JSON.stringify(['psp','3ds','dosbox_pure','azahar'].includes(core))};
-window.EJS_volume=${JSON.stringify(Number(volume)||0)};
-window.EJS_ready=function(){try{window.parent.postMessage({type:'CONSOLIUS_EMULATOR_READY',name:window.EJS_gameName},'*')}catch(_){} };
-window.EJS_onExit=function(){try{window.parent.postMessage({type:'CONSOLIUS_EMULATOR_EXIT'},'*')}catch(_){} };
-window.addEventListener('message',e=>{if(e.data?.type==='CONSOLIUS_GAME_VOLUME'){try{if(window.EJS_setVolume)window.EJS_setVolume(e.data.value); const media=document.querySelectorAll('audio,video');media.forEach(m=>m.volume=Math.max(0,Math.min(1,Number(e.data.value)||0)));}catch(_){}}});
-</script><script src="${EMULATORJS_DATA}loader.js"></script></body></html>`;
+    function prepareDirectEmulatorRoot(){
+        const host=$('games-emulator-host');
+        if(!host) throw new Error('Game Studio emulator host is missing.');
+        host.innerHTML='';
+        const root=document.createElement('div');
+        root.id='consolius-emulator-root';
+        root.style.cssText='position:absolute;inset:0;width:100%;height:100%;background:#000;overflow:hidden;';
+        const game=document.createElement('div');
+        game.id='game';
+        game.style.cssText='width:100%;height:100%;min-width:0;min-height:0;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;';
+        root.appendChild(game);
+        host.appendChild(root);
+        return game;
     }
 
     function launchRomInBuiltInEmulator(file){
         if(!file) return;
-        destroyGamesEmulator();
-        revokeRomUrls(false);
-        currentRomFile=file; currentRomName=file.name; currentRomUrl=null;
-        currentRomObjectUrl=URL.createObjectURL(file);
-        const select=$('games-core-select');
-        const detected=detectRomCore(file.name);
-        if(select){
-            if(!select.dataset.userSet || select.dataset.userSet!=='1') select.value=detected;
-            select.dataset.userSet=select.value==='auto'?'0':'1';
+        try{
+            destroyGamesEmulator();
+            revokeRomUrls();
+            currentRomFile=file; currentRomName=file.name; currentRomUrl=null;
+            currentRomObjectUrl=URL.createObjectURL(file);
+            const select=$('games-core-select');
+            const detected=detectRomCore(file.name);
+            if(select){
+                if(!select.dataset.userSet || select.dataset.userSet!=='1') select.value=detected;
+                if(select.value==='auto') select.dataset.userSet='0';
+            }
+            const core=(select?.value && select.value!=='auto')?select.value:detected;
+            if($('games-core-badge')) $('games-core-badge').textContent=(core||'AUTO').toUpperCase();
+            prepareDirectEmulatorRoot();
+            $('games-empty-state')?.setAttribute('hidden','hidden');
+            updateGamesCurrentCard(file.name, `${(file.size/1048576).toFixed(2)} MB · ${(core||'AUTO').toUpperCase()} core`);
+            gamesStatus(`Loading ${file.name}…`,'loading');
+            addRomToLibrary(file,core);
+
+            // IMPORTANT: run EmulatorJS in the main CONSOLIUS document instead of a
+            // Blob/srcdoc iframe. Blob/srcdoc frames have opaque origins, which makes
+            // EmulatorJS's localStorage access fail with "Access is denied" and leaves
+            // the emulator black. Running the loader in the top-level document keeps
+            // the normal localStorage origin and lets the WebAssembly core initialize.
+            const volume=Math.max(0,Math.min(1,Number($('games-volume')?.value||1)));
+            const scale=$('games-scale-select')?.value||'fit';
+            const root=$('game');
+            if(scale==='stretch') root.style.imageRendering='auto';
+            if(scale==='integer') root.style.imageRendering='pixelated';
+
+            window.EJS_player='#game';
+            window.EJS_gameName=file.name;
+            window.EJS_gameUrl=currentRomObjectUrl;
+            window.EJS_biosUrl=currentBiosObjectUrl||'';
+            window.EJS_core=core==='auto'?'gba':core;
+            window.EJS_pathtodata=EMULATORJS_DATA;
+            window.EJS_startOnLoaded=true;
+            window.EJS_askBeforeExit=false;
+            window.EJS_threads=['psp','3ds','dosbox_pure','azahar'].includes(core);
+            window.EJS_volume=volume;
+            window.EJS_ready=function(){
+                gamesStatus(`${file.name} — ready`,'ready');
+                try{ if(window.EJS_setVolume) window.EJS_setVolume(volume); }catch(_){}
+                try{ window.dispatchEvent(new CustomEvent('consolius-emulator-ready')); }catch(_){}
+            };
+            window.EJS_onExit=function(){ gamesStatus('Emulator exited','ready'); };
+
+            const script=document.createElement('script');
+            script.src=EMULATORJS_DATA+'loader.js';
+            script.async=false;
+            script.dataset.consoliusEjsScript='1';
+            script.addEventListener('error',()=>{
+                gamesStatus('Emulator loader failed to load','error');
+                notify('EmulatorJS could not load. Check your internet connection.','error');
+            });
+            window.__CONSOLIUS_EMULATOR_SCRIPT__=script;
+            document.head.appendChild(script);
+        }catch(error){
+            gamesStatus(error.message||'Emulator failed to start','error');
+            notify(`Emulator failed: ${error.message}`,'error');
         }
-        const core=(select?.value && select.value!=='auto')?select.value:detected;
-        if($('games-core-badge')) $('games-core-badge').textContent=(core||'AUTO').toUpperCase();
-        const frame=document.createElement('iframe');
-        frame.className='games-emulator-frame';
-        frame.allow='autoplay; fullscreen; gamepad; clipboard-read; clipboard-write';
-        frame.title=file.name;
-        frame.addEventListener('load',()=>{ gamesStatus(`${file.name} — emulator loaded`,'ready'); });
-        $('games-emulator-host')?.appendChild(frame);
-        gamesEmulatorFrame=frame;
-        frame.src=URL.createObjectURL(new Blob([buildEmulatorHtml({romUrl:currentRomObjectUrl,biosUrl:currentBiosObjectUrl,core,name:file.name,scale:$('games-scale-select')?.value||'fit',volume:Number($('games-volume')?.value||1)})],{type:'text/html'}));
-        gamesEmulatorDocumentUrl=frame.src;
-        updateGamesCurrentCard(file.name, `${(file.size/1048576).toFixed(2)} MB · ${core.toUpperCase()} core`);
-        $('games-empty-state')?.setAttribute('hidden','hidden');
-        gamesStatus(`Loading ${file.name}…`,'loading');
-        addRomToLibrary(file,core);
     }
 
     async function importWebGameToGames(file){
@@ -789,16 +832,31 @@ window.addEventListener('message',e=>{if(e.data?.type==='CONSOLIUS_GAME_VOLUME')
         const v=Math.max(0,Math.min(1,Number(value)||0));
         try{localStorage.setItem('consolius_games_volume_v1',JSON.stringify({value:v}));}catch(_){ }
         if($('games-volume-value')) $('games-volume-value').textContent=`${Math.round(v*100)}%`;
+        try{ if(window.EJS_setVolume) window.EJS_setVolume(v); }catch(_){}
         if(gamesEmulatorFrame) gamesEmulatorFrame.contentWindow?.postMessage({type:'CONSOLIUS_GAME_VOLUME',value:v},'*');
     }
 
     function changeGamesScale(){ if(currentRomFile) launchRomInBuiltInEmulator(currentRomFile); }
     function popoutBuiltInGame(){
-        if(!currentRomFile || !currentRomObjectUrl) return notify('No ROM is running.','warn');
-        const w=window.open('about:blank','_blank'); if(!w) return notify('Popup blocked. Allow popups for Game Studio.','warn');
+        if(!currentRomFile) return notify('Import a ROM first.','warn');
+        const w=window.open('', '_blank');
+        if(!w) return notify('Popup blocked. Allow popups for Game Studio.','warn');
         const core=$('games-core-select')?.value && $('games-core-select').value!=='auto' ? $('games-core-select').value : detectRomCore(currentRomFile.name);
-        const html=buildEmulatorHtml({romUrl:currentRomObjectUrl,biosUrl:currentBiosObjectUrl,core,name:currentRomFile.name,scale:$('games-scale-select')?.value||'fit',volume:Number($('games-volume')?.value||1)});
-        w.document.open(); w.document.write(html); w.document.close();
+        const volume=Math.max(0,Math.min(1,Number($('games-volume')?.value||1)));
+        const rom=currentRomObjectUrl;
+        w.document.open();
+        w.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(currentRomFile.name)}</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}#game{width:100%;height:100%}</style></head><body><div id="game"></div><script>
+window.EJS_player='#game';
+window.EJS_gameName=${JSON.stringify(currentRomFile.name)};
+window.EJS_gameUrl=${JSON.stringify(rom)};
+window.EJS_biosUrl=${JSON.stringify(currentBiosObjectUrl||'')};
+window.EJS_core=${JSON.stringify(core||'gba')};
+window.EJS_pathtodata=${JSON.stringify(EMULATORJS_DATA)};
+window.EJS_startOnLoaded=true;
+window.EJS_askBeforeExit=false;
+window.EJS_volume=${JSON.stringify(volume)};
+</script><script src="${EMULATORJS_DATA}loader.js"></script></body></html>`);
+        w.document.close();
     }
 
     function launchGameInAboutBlank() {

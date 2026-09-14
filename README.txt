@@ -34,3 +34,5 @@ V6 changes:
 - Auto core detection, manual core selection, BIOS import, video scaling, volume, reset, stop, clear, and recent ROM library.
 - Editor word wrap is enabled by default and wraps long lines inside each visible panel while preserving newlines/indentation.
 - EmulatorJS stable data is loaded from the official CDN at runtime; CONSOLIUS does not bundle third-party copyrighted ROMs or BIOS files.
+
+V7 ROM fix: EmulatorJS now runs directly in the main Game Studio document instead of a Blob/srcdoc iframe. This avoids opaque-origin localStorage failures that caused a black screen on local file:// launches. EmulatorJS data uses the current CDN channel.
