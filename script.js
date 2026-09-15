@@ -8,6 +8,16 @@
     const STORAGE_KEY = 'consolius_workspace_v5';
     const IDENTITY_KEY = 'consolius_tab_identity_v5';
     const SETTINGS_KEY = 'consolius_settings_v5';
+
+    // Storage can be unavailable in some Chromebook/file-restricted contexts.
+    // Never let storage failure stop the entire UI from wiring up.
+    const storage = {
+        get(key, fallback = null) { try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (_) { return fallback; } },
+        set(key, value) { try { localStorage.setItem(key, value); return true; } catch (_) { return false; } },
+        remove(key) { try { localStorage.removeItem(key); return true; } catch (_) { return false; } }
+    };
+
+    const SETTINGS_DEFAULT_VERSION = 6;
     const DEFAULT_SETTINGS = {
         autosave: true, confirmClose: true, startup: 'terminal', rememberScreen: true,
         accent: '#00ffcc', ideAccent: '#ff007f', density: 'comfortable', reduceMotion: false, blur: true, fontSize: 13,
@@ -20,7 +30,7 @@
 
     function loadJsonSetting(key, fallback) {
         try {
-            const raw = localStorage.getItem(key);
+            const raw = storage.get(key);
             const parsed = raw ? JSON.parse(raw) : null;
             return { ...fallback, ...(parsed || {}) };
         } catch (_) { return { ...fallback }; }
@@ -31,15 +41,15 @@
     }
 
     const defaultIdentity = {
-        title: localStorage.getItem('consolius_tab_title') || 'Google Drive',
-        icon: localStorage.getItem('consolius_tab_icon') || 'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png'
+        title: storage.get('consolius_tab_title', 'Google Drive'),
+        icon: storage.get('consolius_tab_icon', 'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png')
     };
 
     window.sysSettings = {
         tabTitle: defaultIdentity.title,
         tabIcon: defaultIdentity.icon,
-        proxyPrefix: localStorage.getItem('consolius_proxy_prefix') || 'https://splash.best/service/',
-        panicKey: localStorage.getItem('consolius_panic_key') || 'q'
+        proxyPrefix: storage.get('consolius_proxy_prefix', 'https://splash.best/service/'),
+        panicKey: storage.get('consolius_panic_key', 'q')
     };
 
     let tabs = [];
@@ -572,8 +582,8 @@
         const clean = cmd.toLowerCase().trim();
         const arg = clean.split(/\s+/).slice(1).join(' ');
         const commands = {
-            help(){ printOutput(`<div style="color:#00ffcc;font-weight:bold">CONSOLIUS COMMANDS</div><div>help — show commands</div><div>ide — open the multi-game IDE</div><div>games — open Game Studio</div><div>ui / settings — open Control Center</div><div>runner — open IDE runner</div><div>addtab — create a game tab</div><div>tabs — list game tabs</div><div>run / stop / refresh — control active game</div><div>save — save active game</div><div>duplicate — duplicate active game</div><div>export — export active game ZIP</div><div>hud on/off — toggle performance HUD</div><div>fullscreen — toggle fullscreen</div><div>theme neon/cyan/pink — quick accent presets</div><div>clear — clear terminal</div><div>reset — reset workspace</div><div>exit — return home</div>`); },
-            ide(){ switchScreen('screen-ide'); }, games(){ switchScreen('screen-games'); }, ui(){ openControlPanel('general'); }, settings(){ openControlPanel('general'); }, runner(){ switchScreen('screen-ide'); document.querySelector('#output-area')?.scrollIntoView?.({behavior:'smooth',block:'center'}); },
+            help(){ printOutput(`<div style="color:#00ffcc;font-weight:bold">CONSOLIUS COMMANDS</div><div>help — show commands</div><div>ide — open the multi-game IDE</div><div>games — open Game Studio</div><div>ui / settings — open Control Center</div><div>style / appearance — open Style Center</div><div>runner — open IDE runner</div><div>addtab — create a game tab</div><div>tabs — list game tabs</div><div>run / stop / refresh — control active game</div><div>save — save active game</div><div>duplicate — duplicate active game</div><div>export — export active game ZIP</div><div>hud on/off — toggle performance HUD</div><div>fullscreen — toggle fullscreen</div><div>theme neon/cyan/pink — quick accent presets</div><div>clear — clear terminal</div><div>reset — reset workspace</div><div>exit — return home</div>`); },
+            ide(){ switchScreen('screen-ide'); }, games(){ switchScreen('screen-games'); }, ui(){ openControlPanel('general'); }, settings(){ openControlPanel('general'); }, style(){ openControlPanel('appearance'); }, appearance(){ openControlPanel('appearance'); }, runner(){ switchScreen('screen-ide'); document.querySelector('#output-area')?.scrollIntoView?.({behavior:'smooth',block:'center'}); },
             addtab(){ addGameTab(); }, tabs(){ printOutput(tabs.map((t,i)=>`<div><span style="color:#00ffcc">${i+1}.</span> ${escapeHtml(t.icon)} ${escapeHtml(t.name)} ${t.id===activeTabId?' <b>(active)</b>':''}</div>`).join('')); },
             run(){ runCurrentTab(); }, stop(){ stopCurrentTab(); }, refresh(){ refreshCurrentTab(); }, save(){ syncActiveTabFromEditors(); saveIdentity(); notify('Game saved'); }, duplicate(){ addGameTab(getActiveTab()); }, export(){ exportToZip(); },
             fullscreen(){ toggleFullscreen(); }, clear(){ if(output) output.innerHTML=''; }, reset(){ resetWorkspace(); },
@@ -1075,49 +1085,74 @@ window.EJS_volume=${JSON.stringify(volume)};
 
     function saveSettings() {
         readSettingsForm();
-        if (appSettings.tabTitle) { window.sysSettings.tabTitle=appSettings.tabTitle; localStorage.setItem('consolius_tab_title',appSettings.tabTitle); }
-        if (appSettings.tabIcon) { window.sysSettings.tabIcon=appSettings.tabIcon; localStorage.setItem('consolius_tab_icon',appSettings.tabIcon); }
-        if (appSettings.proxyPrefix) { window.sysSettings.proxyPrefix=appSettings.proxyPrefix; localStorage.setItem('consolius_proxy_prefix',appSettings.proxyPrefix); }
-        if (appSettings.panicKey) { window.sysSettings.panicKey=appSettings.panicKey; localStorage.setItem('consolius_panic_key',appSettings.panicKey); }
+        if (appSettings.tabTitle) { window.sysSettings.tabTitle=appSettings.tabTitle; storage.set('consolius_tab_title',appSettings.tabTitle); }
+        if (appSettings.tabIcon) { window.sysSettings.tabIcon=appSettings.tabIcon; storage.set('consolius_tab_icon',appSettings.tabIcon); }
+        if (appSettings.proxyPrefix) { window.sysSettings.proxyPrefix=appSettings.proxyPrefix; storage.set('consolius_proxy_prefix',appSettings.proxyPrefix); }
+        if (appSettings.panicKey) { window.sysSettings.panicKey=appSettings.panicKey; storage.set('consolius_panic_key',appSettings.panicKey); }
         saveAppSettings(); updateDocumentIdentity(); applyAdvancedSettings();
-        $('settings-save-status').textContent='Saved just now.';
+        if ($('settings-save-status')) $('settings-save-status').textContent='Saved just now.';
         notify('Settings saved');
     }
     window.saveSettings=saveSettings;
 
     function loadSavedSettings(){
-        appSettings={...DEFAULT_SETTINGS,...loadJsonSetting(SETTINGS_KEY,DEFAULT_SETTINGS)};
-        try{
-            if(!localStorage.getItem('consolius_v6_wrap_migrated')){
+        try {
+            appSettings={...DEFAULT_SETTINGS,...loadJsonSetting(SETTINGS_KEY,DEFAULT_SETTINGS)};
+            if(!storage.get('consolius_v6_wrap_migrated')){
                 appSettings.wrap=true;
-                localStorage.setItem('consolius_v6_wrap_migrated','1');
+                storage.set('consolius_v6_wrap_migrated','1');
             }
-        }catch(_){}
-        window.sysSettings.tabTitle=localStorage.getItem('consolius_tab_title') || appSettings.tabTitle || defaultIdentity.title;
-        window.sysSettings.tabIcon=localStorage.getItem('consolius_tab_icon') || appSettings.tabIcon || defaultIdentity.icon;
-        window.sysSettings.proxyPrefix=localStorage.getItem('consolius_proxy_prefix') || 'https://splash.best/service/';
-        window.sysSettings.panicKey=localStorage.getItem('consolius_panic_key') || 'q';
-        appSettings.tabTitle=window.sysSettings.tabTitle; appSettings.tabIcon=window.sysSettings.tabIcon; appSettings.proxyPrefix=window.sysSettings.proxyPrefix; appSettings.panicKey=window.sysSettings.panicKey;
-        saveAppSettings(); fillSettingsForm(); applyAdvancedSettings(); updateDocumentIdentity();
+            window.sysSettings.tabTitle=storage.get('consolius_tab_title', appSettings.tabTitle || defaultIdentity.title);
+            window.sysSettings.tabIcon=storage.get('consolius_tab_icon', appSettings.tabIcon || defaultIdentity.icon);
+            window.sysSettings.proxyPrefix=storage.get('consolius_proxy_prefix', 'https://splash.best/service/');
+            window.sysSettings.panicKey=storage.get('consolius_panic_key', 'q');
+            appSettings.tabTitle=window.sysSettings.tabTitle;
+            appSettings.tabIcon=window.sysSettings.tabIcon;
+            appSettings.proxyPrefix=window.sysSettings.proxyPrefix;
+            appSettings.panicKey=window.sysSettings.panicKey;
+            saveAppSettings();
+            fillSettingsForm();
+            applyAdvancedSettings();
+            updateDocumentIdentity();
+        } catch (error) {
+            console.warn('[CONSOLIUS] Settings load recovered:', error);
+            appSettings={...DEFAULT_SETTINGS};
+            try { fillSettingsForm(); applyAdvancedSettings(); updateDocumentIdentity(); } catch (_) {}
+        }
     }
 
     function openControlPanel(page='general'){
-        const modal=$('control-panel-modal'); if(!modal) return;
+        const modal=$('control-panel-modal');
+        if(!modal) return false;
+        const validPages=['general','appearance','ide','runner','performance','privacy','shortcuts','data'];
+        if(!validPages.includes(page)) page='general';
+        modal.hidden=false;
+        modal.classList.add('active');
         modal.style.display='flex';
+        modal.setAttribute('aria-hidden','false');
         document.querySelectorAll('.settings-nav-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.settingsPage===page));
         document.querySelectorAll('.settings-page').forEach(p=>p.classList.toggle('active',p.dataset.settingsPage===page));
         fillSettingsForm();
+        setTimeout(()=>document.querySelector('.settings-nav-btn.active')?.focus?.({preventScroll:true}),0);
+        return true;
     }
-    function closeControlPanel(){ const modal=$('control-panel-modal'); if(modal) modal.style.display='none'; }
+    function closeControlPanel(){
+        const modal=$('control-panel-modal');
+        if(!modal) return;
+        modal.classList.remove('active');
+        modal.style.display='none';
+        modal.setAttribute('aria-hidden','true');
+        modal.hidden=false;
+    }
     window.openControlPanel=openControlPanel; window.closeControlPanel=closeControlPanel;
 
     function resetWorkspace(){
         if(!window.confirm('Reset all saved game tabs and restore a blank workspace?')) return;
-        localStorage.removeItem(STORAGE_KEY); tabs=[createTab('New Game',true)]; activeTabId=tabs[0].id; saveWorkspace(); syncEditorsFromTab(); notify('Workspace reset');
+        storage.remove(STORAGE_KEY); tabs=[createTab('New Game',true)]; activeTabId=tabs[0].id; saveWorkspace(); syncEditorsFromTab(); notify('Workspace reset');
     }
     function exportWorkspaceJson(){ syncActiveTabFromEditors(); const blob=new Blob([JSON.stringify({version:5,tabs,activeTabId,settings:appSettings,identity:defaultIdentity},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='consolius_workspace.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
     function importWorkspaceFile(file){ if(!file) return; file.text().then(text=>{ const data=JSON.parse(text); if(Array.isArray(data.tabs)&&data.tabs.length){tabs=data.tabs.map(normalizeTab); activeTabId=tabs.some(t=>t.id===data.activeTabId)?data.activeTabId:tabs[0].id; if(data.settings) appSettings={...DEFAULT_SETTINGS,...data.settings}; saveWorkspace(); saveAppSettings(); syncEditorsFromTab(); fillSettingsForm(); applyAdvancedSettings(); notify('Workspace imported'); } }).catch(e=>notify(`Import failed: ${e.message}`,'error')); }
-    function clearAllSettings(){ if(!confirm('Reset CONSOLIUS settings and identity? Your game tabs will remain.')) return; localStorage.removeItem(SETTINGS_KEY); localStorage.removeItem('consolius_tab_title'); localStorage.removeItem('consolius_tab_icon'); localStorage.removeItem('consolius_proxy_prefix'); localStorage.removeItem('consolius_panic_key'); loadSavedSettings(); notify('Settings reset'); }
+    function clearAllSettings(){ if(!confirm('Reset CONSOLIUS settings and identity? Your game tabs will remain.')) return; storage.remove(SETTINGS_KEY); storage.remove('consolius_tab_title'); storage.remove('consolius_tab_icon'); storage.remove('consolius_proxy_prefix'); storage.remove('consolius_panic_key'); loadSavedSettings(); notify('Settings reset'); }
 
     function toggleFullscreen(){ if(!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
     window.toggleFullscreen=toggleFullscreen;
@@ -1219,6 +1254,23 @@ window.EJS_volume=${JSON.stringify(volume)};
         $('proxy-frame')?.addEventListener('load', proxyFrameLoaded);
         $('proxy-frame')?.addEventListener('error', proxyFrameError);
         document.querySelectorAll('.proxy-hud-badge').forEach(el => el.addEventListener('click', toggleOverlayTerminal));
+
+        // Delegated fallbacks: these still work even if an earlier optional binding failed.
+        if (!document.documentElement.dataset.consoliusDelegated) {
+            document.documentElement.dataset.consoliusDelegated='1';
+            document.addEventListener('click', e => {
+                const target = e.target.closest?.('#btn-style-center, #btn-open-settings-ide, #btn-open-settings-proxy, #btn-close-settings, #btn-close-settings-footer, #btn-save-settings');
+                if (!target) return;
+                if (target.id === 'btn-style-center') openControlPanel('appearance');
+                else if (target.id === 'btn-open-settings-ide' || target.id === 'btn-open-settings-proxy') openControlPanel('general');
+                else if (target.id === 'btn-close-settings' || target.id === 'btn-close-settings-footer') closeControlPanel();
+                else if (target.id === 'btn-save-settings') saveSettings();
+            }, true);
+            document.addEventListener('click', e => {
+                const nav = e.target.closest?.('.settings-nav-btn');
+                if (nav) { e.preventDefault(); openControlPanel(nav.dataset.settingsPage); }
+            }, true);
+        }
     }
 
 
@@ -1236,13 +1288,13 @@ window.EJS_volume=${JSON.stringify(volume)};
                 const min=Math.max(180,Math.min(480,Number(appSettings.minEditorWidth)||220));
                 const max=Math.max(min+40,Math.min(window.innerWidth*0.55,760));
                 const move=e=>{ const w=Math.max(min,Math.min(max,start+(e.clientX-startX))); panel.style.flex=`0 0 ${w}px`; };
-                const up=()=>{ const w=Math.round(panel.getBoundingClientRect().width); const next=loadJsonSetting('consolius_editor_widths_v5',{htmlWidth:0,cssWidth:0,jsWidth:0}); next[key]=w; try{localStorage.setItem('consolius_editor_widths_v5',JSON.stringify(next));}catch(_){} window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+                const up=()=>{ const w=Math.round(panel.getBoundingClientRect().width); const next=loadJsonSetting('consolius_editor_widths_v5',{htmlWidth:0,cssWidth:0,jsWidth:0}); next[key]=w; try{storage.set('consolius_editor_widths_v5',JSON.stringify(next));}catch(_){} window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
                 window.addEventListener('pointermove',move); window.addEventListener('pointerup',up,{once:true});
             });
         });
     }
 
-    function resetEditorLayout(){ localStorage.removeItem('consolius_editor_widths_v5'); document.querySelectorAll('.code-panel').forEach(p=>p.style.flex='1 1 0'); applyPanelMinimumWidth(); installPanelResizers(); notify('Editor widths reset'); }
+    function resetEditorLayout(){ storage.remove('consolius_editor_widths_v5'); document.querySelectorAll('.code-panel').forEach(p=>p.style.flex='1 1 0'); applyPanelMinimumWidth(); installPanelResizers(); notify('Editor widths reset'); }
     function basicFormatCurrent(){
         const active=document.activeElement; if(!active || !['TEXTAREA','INPUT'].includes(active.tagName)) return;
         if(!active.value) return;
@@ -1295,19 +1347,19 @@ window.EJS_volume=${JSON.stringify(volume)};
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-        loadWorkspace();
-        loadSavedSettings();
-        wireUi();
-        installPanelResizers();
-        syncEditorsFromTab();
-        renderRunnerStack();
-        updateGamesControls();
+        // Wire interaction FIRST. A storage/import/render problem must never disable every button.
+        try { wireUi(); } catch (error) { console.error('[CONSOLIUS] UI wiring recovered:', error); }
+        try { loadWorkspace(); } catch (error) { console.error('[CONSOLIUS] Workspace load recovered:', error); }
+        try { loadSavedSettings(); } catch (error) { console.error('[CONSOLIUS] Settings load recovered:', error); }
+        try { installPanelResizers(); } catch (error) { console.error('[CONSOLIUS] Resizer setup recovered:', error); }
+        try { syncEditorsFromTab(); } catch (error) { console.error('[CONSOLIUS] Editor sync recovered:', error); }
+        try { renderRunnerStack(); updateGamesControls(); } catch (error) { console.error('[CONSOLIUS] Runner UI recovered:', error); }
         const startupMap={terminal:'screen-terminal',ide:'screen-ide',games:'screen-games'};
         let startupScreen=startupMap[appSettings.startup] || 'screen-terminal';
-        if(appSettings.rememberScreen){ try { const saved=localStorage.getItem('consolius_last_screen_v5'); if(saved && $(''+saved)) startupScreen=saved; } catch(_){} }
-        switchScreen(startupScreen);
-        startPerformanceSampler();
-        startAutosave();
+        if(appSettings.rememberScreen){ const saved=storage.get('consolius_last_screen_v5'); if(saved && $(saved)) startupScreen=saved; }
+        try { switchScreen(startupScreen); } catch (_) {}
+        try { startPerformanceSampler(); } catch (_) {}
+        try { startAutosave(); } catch (_) {}
 
         window.addEventListener('keydown', e => {
             if (e.key === 'Escape') { closeControlPanel(); $('overlay-terminal')?.classList.remove('active'); }

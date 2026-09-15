@@ -667,6 +667,8 @@ button.toolbar-btn:hover {
    ========================================================================== */
 
 .overlay {
+    pointer-events: none;
+    visibility: hidden;
     position: fixed; 
     top: 0; 
     left: 0; 
@@ -682,8 +684,10 @@ button.toolbar-btn:hover {
     transition: opacity var(--transition-speed) var(--transition-curve);
 }
 .overlay.active { 
-    display: flex; 
+    display: flex !important; 
     opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .modal.glass-panel {
@@ -1866,3 +1870,24 @@ body.density-spacious #sidebar { padding: 16px !important; }
 .resource-recovery-note{margin-top:15px;color:#6f7280;font-size:10px;line-height:1.55}
 .drop-active{outline:2px dashed var(--console-accent)!important;outline-offset:-5px}
 #screen-ide .CodeMirror, #screen-ide textarea{overflow-wrap:anywhere;word-break:break-word}
+
+
+/* Robust settings modal interaction: hidden means non-interactive; active means fully clickable. */
+#control-panel-modal:not(.active) {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+}
+#control-panel-modal.active {
+    display: flex !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+#control-panel-modal .modal,
+#control-panel-modal .settings-nav,
+#control-panel-modal .settings-pages,
+#control-panel-modal .settings-footer {
+    pointer-events: auto !important;
+}
