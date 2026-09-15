@@ -308,9 +308,9 @@
         <div class="games-studio-layout">
             <aside class="games-sidebar">
                 <div class="games-section-title"><i class="fa-solid fa-file-arrow-up"></i> Game Importer</div>
-                <input type="file" id="rom-file-input" accept=".html,.htm,.zip,.nes,.fds,.unf,.unif,.gba,.gb,.gbc,.nds,.sfc,.smc,.z64,.n64,.v64,.md,.gen,.smd,.sms,.gg,.32x,.cue,.bin,.img,.iso,.pbp,.chd,.m3u,.a26,.a52,.a78,.lnx,.jag,.ws,.wsc,.ngp,.ngc,.pce,.tape,.d64,.g64,.adf,.prg,.dsk,.mcr,.zip,.7z,.rar" hidden>
+                <input type="file" id="rom-file-input" accept="" hidden>
                 <button class="toolbar-btn game-import-primary" id="btn-import-rom"><i class="fa-solid fa-file-import"></i> Import Game / ROM</button>
-                <input type="file" id="rom-bios-input" accept=".bin,.rom,.bios,.zip" hidden>
+                <input type="file" id="rom-bios-input" accept="" hidden>
                 <button class="toolbar-btn" id="btn-import-bios"><i class="fa-solid fa-microchip"></i> Import BIOS</button>
 
                 <div class="games-control-row">
@@ -400,6 +400,16 @@
                     <iframe id="games-web-frame" title="Web game" class="games-web-frame" hidden></iframe>
                 </div>
             </main>
+        </div>
+    </div>
+
+    <div id="resource-recovery-overlay" class="resource-recovery-overlay" hidden>
+        <div class="resource-recovery-card">
+            <div class="resource-recovery-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="recovery-title">Resource unavailable</div>
+            <div class="recovery-message">The browser did not finish loading this resource.</div>
+            <div class="recovery-actions"></div>
+            <div class="resource-recovery-note">CONSOLIUS stops waiting and offers recovery actions instead of leaving the screen stuck forever. Browser or administrator restrictions cannot be overridden by page JavaScript.</div>
         </div>
     </div>
 

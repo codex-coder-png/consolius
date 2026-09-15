@@ -53,7 +53,14 @@
     let gamesEmulatorFrame = null;
     let gamesEmulatorDocumentUrl = null;
     const romLibrary = [];
-    const EMULATORJS_DATA = 'https://cdn.emulatorjs.org/latest/data/';
+    const EMULATORJS_SOURCES = [
+        'https://cdn.emulatorjs.org/latest/data/',
+        'https://cdn.emulatorjs.org/4.2.1/data/'
+    ];
+    const EMULATOR_LOAD_TIMEOUT = 15000;
+    let activeEmulatorSource = EMULATORJS_SOURCES[0];
+    const EMULATORJS_DATA = activeEmulatorSource;
+    let emulatorBootTimer = null;
     let extraJsEditors = [];
 
     const $ = id => document.getElementById(id);
@@ -64,6 +71,36 @@
             '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
         }[c]));
     }
+
+    function showResourceRecovery(title, message, actions = []) {
+        const container = $('resource-recovery-overlay');
+        if (!container) return;
+        const titleEl = container.querySelector('.recovery-title');
+        const msgEl = container.querySelector('.recovery-message');
+        const actionsEl = container.querySelector('.recovery-actions');
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+        if (actionsEl) {
+            actionsEl.innerHTML = '';
+            actions.forEach(action => {
+                const btn = document.createElement('button');
+                btn.className = 'toolbar-btn';
+                btn.type = 'button';
+                btn.textContent = action.label;
+                btn.addEventListener('click', action.onClick);
+                actionsEl.appendChild(btn);
+            });
+        }
+        container.hidden = false;
+        container.style.display = 'flex';
+    }
+
+    function hideResourceRecovery() {
+        const container = $('resource-recovery-overlay');
+        if (container) { container.hidden = true; container.style.display = 'none'; }
+    }
+
+    function wait(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
 
     function notify(message, kind = 'info') {
         if (appSettings.notifications === false) return;
@@ -414,13 +451,11 @@
         const file = input?.files?.[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = e => {
-            $('htmlCode').value = e.target.result;
-            syncActiveTabFromEditors();
-            if (appSettings.autoRun) runCurrentTab();
-            notify(`Imported ${file.name}`);
-        };
-        reader.onerror = () => notify(`Could not read ${file.name}`, 'error');
+        let settled = false;
+        const timer = setTimeout(() => { if (!settled) { try { reader.abort(); } catch (_) {} notify(`Timed out reading ${file.name}. Try drag-and-drop or the system picker.`, 'error'); } }, 8000);
+        reader.onload = e => { settled=true; clearTimeout(timer); $('htmlCode').value = e.target.result; syncActiveTabFromEditors(); if (appSettings.autoRun) runCurrentTab(); notify(`Imported ${file.name}`); };
+        reader.onerror = () => { settled=true; clearTimeout(timer); notify(`Could not read ${file.name}. The browser may be blocking local file access.`, 'error'); };
+        reader.onabort = () => { settled=true; clearTimeout(timer); };
         reader.readAsText(file);
         input.value = '';
     }
@@ -429,13 +464,11 @@
         const file = input?.files?.[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = e => {
-            $('cssCode').value = e.target.result;
-            syncActiveTabFromEditors();
-            if (appSettings.autoRun) runCurrentTab();
-            notify(`Imported ${file.name}`);
-        };
-        reader.onerror = () => notify(`Could not read ${file.name}`, 'error');
+        let settled = false;
+        const timer = setTimeout(() => { if (!settled) { try { reader.abort(); } catch (_) {} notify(`Timed out reading ${file.name}. Try drag-and-drop or the system picker.`, 'error'); } }, 8000);
+        reader.onload = e => { settled=true; clearTimeout(timer); $('cssCode').value = e.target.result; syncActiveTabFromEditors(); if (appSettings.autoRun) runCurrentTab(); notify(`Imported ${file.name}`); };
+        reader.onerror = () => { settled=true; clearTimeout(timer); notify(`Could not read ${file.name}. The browser may be blocking local file access.`, 'error'); };
+        reader.onabort = () => { settled=true; clearTimeout(timer); };
         reader.readAsText(file);
         input.value = '';
     }
@@ -447,19 +480,33 @@
         extraJsEditors = [];
         $('extra-js-container').innerHTML = '';
         let remaining = files.length;
+        let finished = false;
+        const timeout = setTimeout(() => {
+            if (finished) return;
+            finished = true;
+            notify('Timed out reading one or more JavaScript files. The browser may be blocking local file access.', 'error');
+        }, 8000);
         files.forEach((file, index) => {
             const reader = new FileReader();
             reader.onload = e => {
+                if (finished) return;
                 if (index === 0) $('jsCode').value = e.target.result;
                 else addJsSlot(file.name, e.target.result, false);
                 remaining--;
                 if (remaining === 0) {
+                    finished = true; clearTimeout(timeout);
                     syncActiveTabFromEditors();
                     if (appSettings.autoRun) runCurrentTab();
                     notify(`${files.length} JavaScript file${files.length === 1 ? '' : 's'} imported`);
                 }
             };
-            reader.onerror = () => remaining--;
+            reader.onerror = () => {
+                remaining--;
+                if (remaining === 0 && !finished) {
+                    finished = true; clearTimeout(timeout);
+                    notify('JavaScript import failed. The browser may be blocking one or more local files.', 'error');
+                }
+            };
             reader.readAsText(file);
         });
         input.value = '';
@@ -660,6 +707,7 @@
     }
 
     function destroyGamesEmulator(){
+        if (emulatorBootTimer) { clearTimeout(emulatorBootTimer); emulatorBootTimer = null; }
         try{
             if(window.EJS_emulator){
                 if(typeof window.EJS_emulator.exit === 'function') window.EJS_emulator.exit();
@@ -687,6 +735,53 @@
         root.appendChild(game);
         host.appendChild(root);
         return game;
+    }
+
+    function loadEmulatorLoaderWithFallback() {
+        return new Promise((resolve, reject) => {
+            let index = 0;
+            const tryNext = () => {
+                if (index >= EMULATORJS_SOURCES.length) {
+                    reject(new Error('The emulator engine could not be loaded on this device/network.'));
+                    return;
+                }
+                const source = EMULATORJS_SOURCES[index++];
+                activeEmulatorSource = source;
+                const script = document.createElement('script');
+                script.src = source + 'loader.js';
+                script.async = false;
+                script.dataset.consoliusEjsScript = '1';
+                let settled = false;
+                const finish = (ok, error) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    if (ok) resolve({script, source});
+                    else { try { script.remove(); } catch (_) {} tryNext(); }
+                };
+                const timer = setTimeout(() => finish(false, new Error('timeout')), EMULATOR_LOAD_TIMEOUT);
+                script.addEventListener('load', () => finish(true));
+                script.addEventListener('error', () => finish(false, new Error('load failed')));
+                try { window.EJS_pathtodata = source; } catch (_) {}
+                window.__CONSOLIUS_EMULATOR_SCRIPT__ = script;
+                document.head.appendChild(script);
+            };
+            tryNext();
+        });
+    }
+
+    function showEmulatorUnavailable(file, reason) {
+        gamesStatus('Emulator unavailable on this device','error');
+        const details = `${file?.name || 'ROM'} was imported successfully, but the emulator engine could not finish loading. ${reason || ''}`.trim();
+        showResourceRecovery(
+            'ROM imported — emulator engine unavailable',
+            details + ' This can happen when a Chromebook/network policy blocks external JavaScript or WASM resources. CONSOLIUS cannot override an administrator/browser policy, so it will stop waiting instead of hanging forever.',
+            [
+                { label:'Retry', onClick:()=>{ hideResourceRecovery(); if(currentRomFile) launchRomInBuiltInEmulator(currentRomFile); } },
+                { label:'Show ROM details', onClick:()=>notify(`${file?.name || 'ROM'} · ${((file?.size||0)/1048576).toFixed(2)} MB`,'info') },
+                { label:'Close', onClick:hideResourceRecovery }
+            ]
+        );
     }
 
     function launchRomInBuiltInEmulator(file){
@@ -731,23 +826,26 @@
             window.EJS_askBeforeExit=false;
             window.EJS_threads=['psp','3ds','dosbox_pure','azahar'].includes(core);
             window.EJS_volume=volume;
+            let emulatorReady = false;
             window.EJS_ready=function(){
+                emulatorReady = true;
+                if (emulatorBootTimer) { clearTimeout(emulatorBootTimer); emulatorBootTimer = null; }
                 gamesStatus(`${file.name} — ready`,'ready');
                 try{ if(window.EJS_setVolume) window.EJS_setVolume(volume); }catch(_){}
                 try{ window.dispatchEvent(new CustomEvent('consolius-emulator-ready')); }catch(_){}
             };
             window.EJS_onExit=function(){ gamesStatus('Emulator exited','ready'); };
 
-            const script=document.createElement('script');
-            script.src=EMULATORJS_DATA+'loader.js';
-            script.async=false;
-            script.dataset.consoliusEjsScript='1';
-            script.addEventListener('error',()=>{
-                gamesStatus('Emulator loader failed to load','error');
-                notify('EmulatorJS could not load. Check your internet connection.','error');
+            loadEmulatorLoaderWithFallback().then(({source})=>{
+                activeEmulatorSource=source;
+                hideResourceRecovery();
+                gamesStatus(`${file.name} — starting emulator…`,'loading');
+                emulatorBootTimer = setTimeout(()=>{
+                    if (!emulatorReady) showEmulatorUnavailable(file, 'The emulator loader arrived, but its core/assets did not finish initializing.');
+                }, 20000);
+            }).catch(error=>{
+                showEmulatorUnavailable(file, error.message);
             });
-            window.__CONSOLIUS_EMULATOR_SCRIPT__=script;
-            document.head.appendChild(script);
         }catch(error){
             gamesStatus(error.message||'Emulator failed to start','error');
             notify(`Emulator failed: ${error.message}`,'error');
@@ -759,22 +857,30 @@
         revokeRomUrls(false);
         const web=$('games-web-frame'); if(!web) return;
         $('games-empty-state')?.setAttribute('hidden','hidden');
+        let html='';
         if(/\.html?$/i.test(file.name)){
-            const html=await file.text();
-            currentGamesHtmlUrl=URL.createObjectURL(new Blob([html],{type:'text/html'}));
-            web.src=currentGamesHtmlUrl;
+            const readPromise=file.text();
+            html=await Promise.race([readPromise, wait(8000).then(()=>{throw new Error('Timed out reading HTML file.');})]);
         }else{
-            if(!window.JSZip) throw new Error('JSZip is still loading.');
-            const zip=await JSZip.loadAsync(file);
-            const entry=zip.file(/(^|\/)index\.html?$/i)[0];
+            if(!window.JSZip) throw new Error('ZIP support is unavailable because its helper library was blocked or not loaded.');
+            const zip=await Promise.race([JSZip.loadAsync(file), wait(10000).then(()=>{throw new Error('Timed out opening ZIP.');})]);
+            const entries=zip.file(/(^|\/)index\.html?$/i);
+            const entry=entries[0];
             if(!entry) throw new Error('No index.html found in ZIP');
-            const html=await entry.async('string');
-            currentGamesHtmlUrl=URL.createObjectURL(new Blob([html],{type:'text/html'}));
-            web.src=currentGamesHtmlUrl;
+            html=await Promise.race([entry.async('string'), wait(8000).then(()=>{throw new Error('Timed out extracting index.html.');})]);
         }
+        currentGamesHtmlUrl=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+        web.onload=()=>{ gamesStatus(`${file.name} — web game running`,'ready'); hideResourceRecovery(); };
+        web.onerror=()=>showResourceRecovery('Web game blocked', `${file.name} was loaded, but the browser blocked its local frame/resources. CONSOLIUS cannot override that browser policy.`, [{label:'Retry',onClick:()=>importWebGameToGames(file)},{label:'Open in new tab',onClick:()=>window.open(currentGamesHtmlUrl,'_blank')},{label:'Close',onClick:hideResourceRecovery}]);
+        web.src=currentGamesHtmlUrl;
+        setTimeout(()=>{
+            if(!web.hidden && web.src===currentGamesHtmlUrl) {
+                showResourceRecovery('Web game may be blocked', 'The web-game frame did not report a load within 8 seconds. It may be waiting on scripts, assets, or a browser policy.', [{label:'Retry',onClick:()=>importWebGameToGames(file)},{label:'Open in new tab',onClick:()=>window.open(currentGamesHtmlUrl,'_blank')},{label:'Close',onClick:hideResourceRecovery}]);
+            }
+        },8000);
         web.hidden=false;
         updateGamesCurrentCard(file.name,'Web game · Game Studio runner');
-        gamesStatus(`${file.name} — web game running`,'ready');
+        gamesStatus(`${file.name} — loading web game…`,'loading');
     }
 
     function addRomToLibrary(file, core){
@@ -1082,6 +1188,22 @@ window.EJS_volume=${JSON.stringify(volume)};
         document.querySelectorAll('#htmlCode,#cssCode,#jsCode').forEach(el => el.addEventListener('input', () => {
             syncActiveTabFromEditors();
         }));
+
+        // Drag-and-drop fallback for Chromebooks where filtered file pickers may be unavailable.
+        const ideDrop = $('screen-ide');
+        const gamesDrop = $('game-container');
+        const wireDrop = (target, handler) => {
+            if(!target) return;
+            ['dragenter','dragover'].forEach(evt => target.addEventListener(evt, e=>{ e.preventDefault(); target.classList.add('drop-active'); }));
+            ['dragleave','drop'].forEach(evt => target.addEventListener(evt, e=>{ e.preventDefault(); target.classList.remove('drop-active'); }));
+            target.addEventListener('drop', e => { const file=e.dataTransfer?.files?.[0]; if(file) handler(file); });
+        };
+        wireDrop(ideDrop, file => {
+            if(/\.css$/i.test(file.name)) importCssFile({files:[file],value:''});
+            else if(/\.js$/i.test(file.name)) importJsFiles({files:[file],value:''});
+            else importHtmlFile({files:[file],value:''});
+        });
+        wireDrop(gamesDrop, file => handleRomImport({files:[file],value:''}));
 
         $('main-term-input')?.addEventListener('keydown', e => {
             if (e.key === 'Enter') {

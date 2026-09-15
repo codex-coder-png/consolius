@@ -1853,3 +1853,16 @@ body.density-spacious #sidebar { padding: 16px !important; }
 #consolius-emulator-root .ejs_controls {
     z-index: 5;
 }
+
+
+/* V8 resource-recovery / Chromebook compatibility */
+.resource-recovery-overlay{position:fixed;inset:0;z-index:40000;display:none;align-items:center;justify-content:center;background:rgba(2,2,5,.78);backdrop-filter:blur(8px)}
+.resource-recovery-overlay[hidden]{display:none!important}
+.resource-recovery-card{width:min(560px,calc(100vw - 32px));padding:28px;border:1px solid rgba(255,255,255,.11);border-radius:16px;background:rgba(12,13,19,.97);box-shadow:0 24px 70px rgba(0,0,0,.55);text-align:center;font-family:Inter,sans-serif}
+.resource-recovery-icon{width:58px;height:58px;border-radius:16px;display:grid;place-items:center;margin:0 auto 14px;background:rgba(255,80,96,.08);color:#ff5060;font-size:24px}
+.recovery-title{font-size:19px;font-weight:800;color:#f2f2f5;margin-bottom:8px}
+.recovery-message{font-size:12px;line-height:1.7;color:#a9abb7;white-space:pre-wrap;overflow-wrap:anywhere}
+.recovery-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:18px}
+.resource-recovery-note{margin-top:15px;color:#6f7280;font-size:10px;line-height:1.55}
+.drop-active{outline:2px dashed var(--console-accent)!important;outline-offset:-5px}
+#screen-ide .CodeMirror, #screen-ide textarea{overflow-wrap:anywhere;word-break:break-word}
